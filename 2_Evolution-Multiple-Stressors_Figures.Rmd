@@ -1,0 +1,1687 @@
+---
+title: "Evolution-Multiple-Stressors: Figures"
+author: "James Orr"
+output:
+   html_notebook:
+     code_folding: hide
+     theme: flatly
+     toc: true
+     toc_depth: 4
+     number_sections: no
+---
+
+```{r, echo=FALSE, results='hide'}
+rm(list = ls())           # clear the environment 
+
+# Packages
+library(tidyverse)        # Organising and manipulating data
+library(gsubfn)           # To use enhance list[] functionality
+library(plotrix)          # To use draw.circle and draw.radial.line
+library(latex2exp)        # To use Tex in figures
+
+```
+
+
+### Intro
+
+This R notebook contains the code used to plot the figures in the paper: *Rapid Evolution Generates Synergism Between Multiple Stressors and Complicates Ecological Restoration*. 
+
+Dataframes generated in the `Rotifer-Stressor-Analysis` notebook are used. 
+
+<br>
+
+- **Import data and organise**
+
+```{r, echo=TRUE, results='hide'}
+rot_pop <- read.csv("Data/Outputs/population_growth.csv", header = TRUE, 
+                     stringsAsFactors=FALSE)
+
+# add a variable of labels 
+rot_pop <- rot_pop %>%
+  mutate(label = case_when(
+    evolline == 1 ~ "Con",
+    evolline == 2 ~ "S",
+    evolline == 3 ~ "C",
+    evolline == 4 ~ "T",
+    evolline == 5 ~ "SC",
+    evolline == 6 ~ "ST",
+    evolline == 7 ~ "CT",
+    evolline == 8 ~ "SCT"))
+
+growth_trend_data <- read.csv("Data/Outputs/stressor_interactions.csv", 
+                                  header = TRUE, stringsAsFactors = FALSE)
+
+growth_trend_data$treatment_F <- as.factor(growth_trend_data$treatment_F)
+```
+
+
+- **Make logical subsets**
+
+```{r, echo=TRUE}
+###### Evolved Population Growth Rates #######
+Na_in_Na <- subset(rot_pop, treat_num == "10")
+Cu_in_Cu <- subset(rot_pop, treat_num == "19")
+Temp_in_Temp <- subset(rot_pop, treat_num == "28")
+NaCu_in_NaCu <- subset(rot_pop, treat_num == "37")
+NaTemp_in_NaTemp <- subset(rot_pop, treat_num == "46")
+CuTemp_in_CuTemp <- subset(rot_pop, treat_num == "55")
+All_in_All <- subset(rot_pop, treat_num == "64")
+
+####### Non-Evolved Population Growth Rate ########
+Control_in_Control <- subset(rot_pop, treat_num == "1")
+Control_in_Na <- subset(rot_pop, treat_num == "2")
+Control_in_Cu <- subset(rot_pop, treat_num == "3")
+Control_in_Temp <- subset(rot_pop, treat_num == "4")
+Control_in_NaCu <- subset(rot_pop, treat_num == "5")
+Control_in_NaTemp <- subset(rot_pop, treat_num == "6")
+Control_in_CuTemp <- subset(rot_pop, treat_num == "7")
+Control_in_All <- subset(rot_pop, treat_num == "8")
+
+#### For Performance Space Plots ####
+NaCu_in_Na <- subset(rot_pop, treat_num == "34")
+NaCu_in_Cu <- subset(rot_pop, treat_num == "35")
+NaCu_in_Temp <- subset(rot_pop, treat_num == "36")
+NaTemp_in_Na <- subset(rot_pop, treat_num == "42")
+NaTemp_in_Cu <- subset(rot_pop, treat_num == "43")
+NaTemp_in_Temp <- subset(rot_pop, treat_num == "44")
+CuTemp_in_Na <- subset(rot_pop, treat_num == "50")
+CuTemp_in_Cu <- subset(rot_pop, treat_num == "51")
+CuTemp_in_Temp <- subset(rot_pop, treat_num == "52")
+All_in_Na <- subset(rot_pop, treat_num == "58")
+All_in_Cu <- subset(rot_pop, treat_num == "59")
+All_in_Temp <- subset(rot_pop, treat_num == "60")
+Na_in_Control <- subset(rot_pop, treat_num == "9")
+Cu_in_Control <- subset(rot_pop, treat_num == "17")
+Temp_in_Control <- subset(rot_pop, treat_num == "25")
+Na_in_Cu <- subset(rot_pop, treat_num == "11")
+Cu_in_Na <- subset(rot_pop, treat_num == "18")
+Na_in_Temp <- subset(rot_pop, treat_num == "12")
+Temp_in_Na <- subset(rot_pop, treat_num == "26")
+Cu_in_Temp <- subset(rot_pop, treat_num == "20")
+Temp_in_Cu <- subset(rot_pop, treat_num == "27")
+
+#### For Removal of Stressors - figure 3#####
+Na_in_Control <- subset(rot_pop, treat_num == "9")
+Cu_in_Control <- subset(rot_pop, treat_num == "17")
+Temp_in_Control <- subset(rot_pop, treat_num == "25")
+NaCu_in_Control <- subset(rot_pop, treat_num == "33")
+NaTemp_in_Control <- subset(rot_pop, treat_num == "41")
+CuTemp_in_Control <- subset(rot_pop, treat_num == "49")
+All_in_Control <- subset(rot_pop, treat_num == "57")
+
+```
+
+
+### Figure 1 
+
+<br>
+
+- **Calculate summary statistics required for figure 1(a)**
+
+Mean effects with standard error of stressor effects ([detaials](https://www.meta-analysis.com/downloads/Meta-analysis%20Effect%20sizes%20based%20on%20means.pdf)) 
+
+```{r, echo=TRUE}
+
+## Some functions to speed things up
+
+std.error <- function(x){ 
+  return( sqrt( var(x) / length(x) ) ) 
+  }
+
+statistics <- function(x, Con){
+  n <- length(x)
+  m <- mean(x)
+  se <- std.error(x)
+  sd <- sd(x)
+  mcon <- mean(Con)
+  sdcon <- sd(Con)
+  ncon <- length(Con)
+  raw_e <- mcon - m
+  raw_v <- (sdcon^2 / ncon) + (sd^2 / n)
+  raw_se <- sqrt(raw_v)
+  return(c(m, se, raw_e, raw_se))
+  }
+
+######################## Evolved ########################
+
+list[mgrowth_Na_in_Na, segrowth_Na_in_Na, rawD_na_on_e, rawSE_na_on_e] <- 
+  statistics(Na_in_Na$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Cu_in_Cu, segrowth_Cu_in_Cu, rawD_cu_on_e, rawSE_cu_on_e] <- 
+  statistics(Cu_in_Cu$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Temp_in_Temp, segrowth_Temp_in_Temp, rawD_temp_on_e, 
+     rawSE_temp_on_e] <- 
+  statistics(Temp_in_Temp$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_NaCu_in_NaCu, segrowth_NaCu_in_NaCu, rawD_nacu_on_e, 
+     rawSE_nacu_on_e] <- 
+  statistics(NaCu_in_NaCu$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_NaTemp_in_NaTemp, segrowth_NaTemp_in_NaTemp, rawD_natemp_on_e, 
+     rawSE_natemp_on_e] <- 
+  statistics(NaTemp_in_NaTemp$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_CuTemp_in_CuTemp, segrowth_CuTemp_in_CuTemp, rawD_cutemp_on_e, 
+     rawSE_cutemp_on_e] <- 
+  statistics(CuTemp_in_CuTemp$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_All_in_All, segrowth_All_in_All, rawD_all_on_e, rawSE_all_on_e] <- 
+  statistics(All_in_All$mean_growth, Control_in_Control$mean_growth)
+
+
+######################## Control ########################
+
+mgrowth_Control_in_Control <- mean(Control_in_Control$mean_growth)
+segrowth_Control_in_Control <- std.error(Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_Na, segrowth_Control_in_Na, rawD_na_on_c, 
+     rawSE_na_on_c] <- 
+  statistics(Control_in_Na$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_Cu, segrowth_Control_in_Cu, rawD_cu_on_c, 
+     rawSE_cu_on_c] <- 
+  statistics(Control_in_Cu$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_Temp, segrowth_Control_in_Temp, rawD_temp_on_c, 
+     rawSE_temp_on_c] <- 
+  statistics(Control_in_Temp$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_NaCu, segrowth_Control_in_NaCu, rawD_nacu_on_c, 
+     rawSE_nacu_on_c] <- 
+  statistics(Control_in_NaCu$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_NaTemp, segrowth_Control_in_NaTemp, rawD_natemp_on_c, 
+     rawSE_natemp_on_c] <- 
+  statistics(Control_in_NaTemp$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_CuTemp, segrowth_Control_in_CuTemp, rawD_cutemp_on_c, 
+     rawSE_cutemp_on_c] <- 
+  statistics(Control_in_CuTemp$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_All, segrowth_Control_in_All, rawD_all_on_c, 
+     rawSE_all_on_c] <- 
+  statistics(Control_in_All$mean_growth, Control_in_Control$mean_growth)
+```
+
+
+- **Plot figure**
+
+```{r, echo=FALSE, fig.width=6.5, fig.height=4.0, results='hide'}
+
+
+## Colour scheme ## 
+j.red <- rgb(245/255, 159/255, 148/255)
+j.blue <- rgb(195/255, 214/255, 245/255)
+j.red_alpha <- rgb(245/255, 159/255, 148/255, alpha = 0.65)
+j.blue_alpha <- rgb(195/255, 214/255, 245/255, alpha = 0.65)
+
+## Layout of plots ##
+layout(matrix(c(1, 5,
+                2, 5,
+                3, 5,
+                4, 5), 
+              nrow=4, byrow=TRUE), widths = c(1, 1.61))
+
+
+###### NaCu #######
+
+par(mar=c(2, 6, 8, 2)) # bottom, left, top, right
+
+NaCu.bar <- barplot(c(rawD_na_on_c, 
+                     rawD_cu_on_c, 
+                     rawD_nacu_on_c,
+                     rawD_na_on_c+rawD_cu_on_c,
+                     rawD_na_on_e, 
+                     rawD_cu_on_e, 
+                     rawD_nacu_on_e,
+                     rawD_na_on_e+rawD_cu_on_e), 
+                   las = 1, xlab = "", ylab = "", yaxt = "n",
+                   names.arg = c("S", "C", "SC", "+",
+                                 "S'", "C'", "SC'", "+'"), 
+                   cex.names = 1.5, 
+                   ylim = c(-0.05, 0.365),
+                   col = c(j.blue,
+                           j.blue,
+                           j.blue,
+                           rgb(0.9, 0.9, 0.9),
+                           j.red,
+                           j.red,
+                           j.red,
+                           rgb(0.9, 0.9, 0.9)),
+                   border = "white",
+                   space = c(0.5, 0.5, 0.5, 0.5, 
+                             2.0, 0.5, 0.5, 0.5))
+
+axis(side = 2, at = c(0.0, 0.15, 0.3), 
+     labels = c("0%", "15%", "30%"),
+     cex.axis=1.5, las=1, lwd=1, lwd.ticks = 1)
+
+abline(h = 0, lty = 1, lwd = 1, col = rgb(0.35, 0.35, 0.35))
+
+mufin <- c(rawD_na_on_c, 
+           rawD_cu_on_c, 
+           rawD_nacu_on_c,
+           rawD_na_on_c+rawD_cu_on_c,
+           rawD_na_on_e, 
+           rawD_cu_on_e,
+           rawD_nacu_on_e,
+           rawD_na_on_e+rawD_cu_on_e)
+sefin <- c(rawSE_na_on_c, 
+           rawSE_cu_on_c,
+           rawSE_nacu_on_c,
+           0,
+           rawSE_na_on_e, 
+           rawSE_cu_on_e, 
+           rawSE_nacu_on_e,
+           0)
+arrows( x0 = NaCu.bar, x1 = NaCu.bar, 
+        y0 = mufin + sefin, y1 = mufin - sefin,
+         code = 3, length = 0.05, angle = 90, lwd = 2,
+        col = c(rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(1, 1, 1),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(1, 1, 1)))
+
+# Add points for populations 
+points(x = c(0.25, 0.25, 0.25, 0.25),
+       y = mgrowth_Control_in_Control-Control_in_Na$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1)
+points(x = c(1.75, 1.75, 1.75, 1.75),
+       y = mgrowth_Control_in_Control-Control_in_Cu$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1)
+points(x = c(3.25, 3.25, 3.25, 3.25),
+       y = mgrowth_Control_in_Control-Control_in_NaCu$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1)
+points(x = c(7.75, 7.75, 7.75, 7.75),
+       y = mgrowth_Control_in_Control-Na_in_Na$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1)
+points(x = c(9.25, 9.25, 9.25),
+       y = mgrowth_Control_in_Control-Cu_in_Cu$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1)
+points(x = c(10.75, 10.75, 10.75),
+       y = mgrowth_Control_in_Control-NaCu_in_NaCu$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1)
+
+
+####################### NaTemp####################### 
+
+par(mar=c(4, 6, 6, 2)) # bottom, left, top, right
+
+NaTemp.bar <- barplot(c(rawD_na_on_c, 
+                     rawD_temp_on_c, 
+                     rawD_natemp_on_c,
+                     rawD_na_on_c+rawD_temp_on_c,
+                     rawD_na_on_e, 
+                     rawD_temp_on_e, 
+                     rawD_natemp_on_e,
+                     rawD_na_on_e+rawD_temp_on_e), 
+                   las = 1, xlab = "", ylab = "", yaxt = "n",
+                   names.arg = c("S", "T", "ST", "+",
+                                 "S'", "T", "ST'", "+'"), 
+                   cex.names = 1.5, 
+                   ylim = c(-0.05, 0.365),
+                   col = c(j.blue,
+                           j.blue,
+                           j.blue,
+                           rgb(0.9, 0.9, 0.9),
+                           j.red,
+                           j.red,
+                           j.red,
+                           rgb(0.9, 0.9, 0.9)),
+                   border = "white",
+                   space = c(0.5, 0.5, 0.5, 0.5, 
+                             2.0, 0.5, 0.5, 0.5))
+
+axis(side = 2, at = c(0.0, 0.15, 0.3), 
+     labels = c("0%", "15%", "30%"),
+     cex.axis=1.5, las=1, lwd=1, lwd.ticks = 1)
+
+abline(h = 0, lty = 1, lwd = 1, col = rgb(0.35, 0.35, 0.35))
+
+mufin <- c(rawD_na_on_c, 
+           rawD_temp_on_c, 
+           rawD_natemp_on_c,
+           rawD_na_on_c+rawD_temp_on_c,
+           rawD_na_on_e, 
+           rawD_temp_on_e,
+           rawD_natemp_on_e,
+           rawD_na_on_e+rawD_temp_on_e)
+sefin <- c(rawSE_na_on_c, 
+           rawSE_temp_on_c,
+           rawSE_natemp_on_c,
+           0,
+           rawSE_na_on_e, 
+           rawSE_temp_on_e, 
+           rawSE_natemp_on_e,
+           0)
+arrows( x0 = NaTemp.bar, x1 = NaTemp.bar, 
+        y0 = mufin + sefin, y1 = mufin - sefin,
+         code = 3, length = 0.05, angle = 90, lwd = 2,
+        col = c(rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(1, 1, 1),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(1, 1, 1)))
+
+
+# Add points for populations 
+points(x = c(0.25, 0.25, 0.25, 0.25),
+       y = mgrowth_Control_in_Control-Control_in_Na$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1)
+points(x = c(1.75, 1.75, 1.75, 1.75),
+       y = mgrowth_Control_in_Control-Control_in_Temp$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1)
+points(x = c(3.25, 3.25, 3.25, 3.25),
+       y = mgrowth_Control_in_Control-Control_in_NaTemp$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1)
+points(x = c(7.75, 7.75, 7.75, 7.75),
+       y = mgrowth_Control_in_Control-Na_in_Na$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1)
+points(x = c(9.25, 9.25, 9.25, 9.25),
+       y = mgrowth_Control_in_Control-Temp_in_Temp$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1)
+points(x = c(10.75, 10.75, 10.75),
+       y = mgrowth_Control_in_Control-NaTemp_in_NaTemp$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1)
+
+
+####################### CuTemp####################### 
+
+par(mar=c(6, 6, 4, 2)) # bottom, left, top, right
+
+CuTemp.bar <- barplot(c(rawD_cu_on_c, 
+                     rawD_temp_on_c, 
+                     rawD_cutemp_on_c,
+                     rawD_cu_on_c+rawD_temp_on_c,
+                     rawD_cu_on_e, 
+                     rawD_temp_on_e, 
+                     rawD_cutemp_on_e,
+                     rawD_cu_on_e+rawD_temp_on_e), 
+                   las = 1, xlab = "", ylab = "", yaxt = "n",
+                   names.arg = c("C", "T", "CT", "+",
+                                 "C'", "T'", "CT'", "+'"), 
+                   cex.names = 1.5, 
+                   ylim = c(-0.05, 0.365),
+                   col = c(j.blue,
+                           j.blue,
+                           j.blue,
+                           rgb(0.9, 0.9, 0.9),
+                           j.red,
+                           j.red,
+                           j.red,
+                           rgb(0.9, 0.9, 0.9)),
+                   border = "white",
+                   space = c(0.5, 0.5, 0.5, 0.5, 
+                             2.0, 0.5, 0.5, 0.5))
+
+axis(side = 2, at = c(0.0, 0.15, 0.3), 
+     labels = c("0%", "15%", "30%"),
+     cex.axis=1.5, las=1, lwd=1, lwd.ticks = 1)
+
+abline(h = 0, lty = 1, lwd = 1, col = rgb(0.35, 0.35, 0.35))
+
+mufin <- c(rawD_cu_on_c, 
+           rawD_temp_on_c, 
+           rawD_cutemp_on_c,
+           rawD_cu_on_c+rawD_temp_on_c,
+           rawD_cu_on_e, 
+           rawD_temp_on_e,
+           rawD_cutemp_on_e,
+           rawD_cu_on_e+rawD_temp_on_e)
+sefin <- c(rawSE_cu_on_c, 
+           rawSE_temp_on_c,
+           rawSE_cutemp_on_c,
+           0,
+           rawSE_cu_on_e, 
+           rawSE_temp_on_e, 
+           rawSE_cutemp_on_e,
+           0)
+arrows( x0 = CuTemp.bar, x1 = CuTemp.bar, 
+        y0 = mufin + sefin, y1 = mufin - sefin,
+         code = 3, length = 0.05, angle = 90, lwd = 2,
+        col = c(rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(1, 1, 1),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(1, 1, 1)))
+
+
+# Add points for populations 
+points(x = c(0.25, 0.25, 0.25, 0.25),
+       y = mgrowth_Control_in_Control-Control_in_Cu$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1)
+points(x = c(1.75, 1.75, 1.75, 1.75),
+       y = mgrowth_Control_in_Control-Control_in_Temp$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1)
+points(x = c(3.25, 3.25, 3.25, 3.25),
+       y = mgrowth_Control_in_Control-Control_in_CuTemp$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1)
+points(x = c(7.75, 7.75, 7.75),
+       y = mgrowth_Control_in_Control-Cu_in_Cu$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1)
+points(x = c(9.25, 9.25, 9.25, 9.25),
+       y = mgrowth_Control_in_Control-Temp_in_Temp$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1)
+points(x = c(10.75, 10.75, 10.75, 10.75),
+       y = mgrowth_Control_in_Control-CuTemp_in_CuTemp$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1)
+
+####################### All####################### 
+
+par(mar=c(8, 6, 2, 2)) # bottom, left, top, right
+
+
+All.bar <- barplot(c(rawD_na_on_c, 
+                     rawD_cu_on_c, 
+                     rawD_temp_on_c,
+                     rawD_all_on_c,
+                     rawD_na_on_c+rawD_cu_on_c+rawD_temp_on_c,
+                     rawD_na_on_e, 
+                     rawD_cu_on_e, 
+                     rawD_temp_on_e,
+                     rawD_all_on_e,
+                     rawD_na_on_e+rawD_cu_on_e+rawD_temp_on_e), 
+                   las = 1, xlab = "", ylab = "", yaxt = "n",
+                   names.arg = c("S", "C", "T", "SCT", "+",
+                                 "S'", "C'", "T'", "SCT'", "+'"),
+                   cex.names = 1.5, 
+                   ylim = c(-0.05, 0.365),
+                   col = c(j.blue,
+                           j.blue,
+                           j.blue,
+                           j.blue,
+                           rgb(0.9, 0.9, 0.9),
+                           j.red,
+                           j.red,
+                           j.red,
+                           j.red,
+                           rgb(0.9, 0.9, 0.9)),
+                   border = "white",
+                   space = c(0.3, 0.3, 0.3, 0.3, 0.3, 
+                             2.3, 0.3, 0.3, 0.3, 0.3))
+
+
+axis(side = 2, at = c(0.0, 0.15, 0.3), 
+     labels = c("0%", "15%", "30%"),
+     cex.axis=1.5, las=1, lwd=1, lwd.ticks = 1)
+
+abline(h = 0, lty = 1, lwd = 1, col = rgb(0.35, 0.35, 0.35))
+
+mufin <- c(rawD_na_on_c, 
+           rawD_cu_on_c, 
+           rawD_temp_on_c,
+           rawD_all_on_c,
+           rawD_na_on_c+rawD_cu_on_c+rawD_temp_on_c,
+           rawD_na_on_e, 
+           rawD_cu_on_e, 
+           rawD_temp_on_e,
+           rawD_all_on_e,
+           rawD_na_on_e+rawD_cu_on_e+rawD_temp_on_e)
+sefin <- c(rawSE_na_on_c, 
+           rawSE_cu_on_c, 
+           rawSE_temp_on_c,
+           rawSE_all_on_c,
+           0,
+           rawSE_na_on_e, 
+           rawSE_cu_on_e, 
+           rawSE_temp_on_e,
+           rawSE_all_on_e,
+           0)
+arrows( x0 = All.bar, x1 = All.bar, 
+        y0 = mufin + sefin, y1 = mufin - sefin,
+         code = 3, length = 0.05, angle = 90, lwd = 2,
+        col = c(rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(1, 1, 1),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(.4, .4, .4),
+                rgb(1, 1, 1)))
+
+# Add points for populations 
+points(x = c(0.1, 0.1, 0.1, 0.1),
+       y = mgrowth_Control_in_Control-Control_in_Na$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 0.75)
+points(x = c(1.45, 1.45, 1.45, 1.45),
+       y = mgrowth_Control_in_Control-Control_in_Cu$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 0.75)
+points(x = c(2.75, 2.75, 2.75, 2.75),
+       y = mgrowth_Control_in_Control-Control_in_Temp$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 0.75)
+points(x = c(4.0, 4.0, 4.0, 4.0),
+       y = mgrowth_Control_in_Control-Control_in_All$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 0.75)
+points(x = c(8.6, 8.6, 8.6, 8.6),
+       y = mgrowth_Control_in_Control-Na_in_Na$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 0.75)
+points(x = c(9.95, 9.95, 9.95),
+       y = mgrowth_Control_in_Control-Cu_in_Cu$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 0.75)
+points(x = c(11.25, 11.25, 11.25, 11.25),
+       y = mgrowth_Control_in_Control-Temp_in_Temp$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 0.75)
+points(x = c(12.5, 12.5, 12.5, 12.5),
+       y = mgrowth_Control_in_Control-All_in_All$mean_growth,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 0.75)
+
+
+####################### Hedges g ############################
+
+par(mar=c(4, 12, 4, 6)) # bottom, left, top, right
+
+col_factor <- c(j.blue, j.red)[growth_trend_data$treatment_F]
+
+plot(effect1 ~ treatment_J, data=growth_trend_data,
+     las = 1, bty = "L", xaxt ="n", 
+     ylim = c(-5, 6.5), xlim = c(-0.25, 1.9),
+     cex=0, cex.axis=2.2, family = "Times",
+     xlab = "", ylab = "")
+
+abline(h = 0, lty = 1, lwd = 8, col = rgb(0, 0, 0, 0.1))
+
+segments(x0 = c(growth_trend_data$treatment_J[1], 
+                growth_trend_data$treatment_J[2], 
+                growth_trend_data$treatment_J[3], 
+                growth_trend_data$treatment_J[4]),
+         y0 = c(growth_trend_data$effect1[1], 
+                growth_trend_data$effect1[2], 
+                growth_trend_data$effect1[3], 
+                growth_trend_data$effect1[4]),
+         x1 = c(growth_trend_data$treatment_J[5], 
+                growth_trend_data$treatment_J[6], 
+                growth_trend_data$treatment_J[7], 
+                growth_trend_data$treatment_J[8]),
+         y1 = c(growth_trend_data$effect1[5], 
+                growth_trend_data$effect1[6], 
+                growth_trend_data$effect1[7], 
+                growth_trend_data$effect1[8]),
+         col= rgb(0.85, 0.85, 0.85), lwd = 4, lty = 2)
+
+arrows( x0 = growth_trend_data$treatment_J, 
+        x1 = growth_trend_data$treatment_J, 
+        y0 = growth_trend_data$cilow1,
+        y1 = growth_trend_data$cihigh1,
+        col= col_factor,
+        code = 3, length = 0.1, angle = 90, lwd = 3)
+
+box(which = "plot", lty = 1, lwd = 1.5)
+
+points(c(growth_trend_data$treatment_J[1], growth_trend_data$treatment_J[2], 
+         growth_trend_data$treatment_J[3], growth_trend_data$treatment_J[4]),
+       c(growth_trend_data$effect1[1], growth_trend_data$effect1[2], 
+         growth_trend_data$effect1[3], growth_trend_data$effect1[4]),
+       pch = 19, col = j.blue, cex=7)
+
+points(c(growth_trend_data$treatment_J[5], growth_trend_data$treatment_J[6], 
+         growth_trend_data$treatment_J[7], growth_trend_data$treatment_J[8]),
+       c(growth_trend_data$effect1[5], growth_trend_data$effect1[6], 
+         growth_trend_data$effect1[7], growth_trend_data$effect1[8]),
+       pch = 19, col = j.red, cex=7)
+
+text(growth_trend_data$effect1 ~ growth_trend_data$treatment_J, labels=growth_trend_data$number, family = "Times", cex = 1.5, 
+     col = rgb(0.3, 0.3, 0.3))
+
+
+```
+<br>
+
+### Figure 2 - no data
+
+<br>
+
+### Figure 3 
+
+<br>
+
+- **Coordinates for diagonal axis** 
+
+This is for the third, diagonal axis (defining the combined effect of stressors).Just divide by two to project onto the diagonal. 
+
+```{r, echo=TRUE}
+
+coord <- function(x){
+  return(x/2)
+}
+
+###### Realised #######
+coord_nacu_con <- coord(rawD_nacu_on_c)
+coord_natemp_con <- coord(rawD_natemp_on_c)
+coord_cutemp_con <- coord(rawD_cutemp_on_c)
+coord_all_con <- coord(rawD_all_on_c)
+coord_nacu_evo <- coord(rawD_nacu_on_e)
+coord_natemp_evo <- coord(rawD_natemp_on_e)
+coord_cutemp_evo <- coord(rawD_cutemp_on_e)
+coord_all_evo<- coord(rawD_all_on_e)
+###### Additive #######
+coord_nacu_add_con <- coord(rawD_na_on_c+rawD_cu_on_c)
+coord_natemp_add_con <- coord(rawD_na_on_c+rawD_temp_on_c)
+coord_cutemp_add_con <- coord(rawD_cu_on_c+rawD_temp_on_c)
+coord_all_add_con <- coord(rawD_na_on_c+rawD_cu_on_c+rawD_temp_on_c)
+coord_nacu_add_evo <- coord(rawD_na_on_e+(rawD_cu_on_e))
+coord_natemp_add_evo <- coord(rawD_na_on_e+rawD_temp_on_e)
+coord_cutemp_add_evo <- coord(rawD_temp_on_e+(rawD_cu_on_e))
+coord_all_add_evo<- coord(rawD_na_on_e+rawD_temp_on_e+(rawD_cu_on_e))
+###### Error Bars ######
+plus_nacu_con <- coord(rawD_nacu_on_c+rawSE_nacu_on_c)
+plus_natemp_con <- coord(rawD_natemp_on_c+rawSE_natemp_on_c)
+plus_cutemp_con <- coord(rawD_cutemp_on_c+rawSE_cutemp_on_c)
+plus_nacu_evo <- coord(rawD_nacu_on_e+rawSE_nacu_on_e)
+plus_natemp_evo <- coord(rawD_natemp_on_e+rawSE_natemp_on_e)
+plus_cutemp_evo <- coord(rawD_cutemp_on_e+rawSE_cutemp_on_e)
+min_nacu_con <- coord(rawD_nacu_on_c-rawSE_nacu_on_c)
+min_natemp_con <- coord(rawD_natemp_on_c-rawSE_natemp_on_c)
+min_cutemp_con <- coord(rawD_cutemp_on_c-rawSE_cutemp_on_c)
+min_nacu_evo <- coord(rawD_nacu_on_e-rawSE_nacu_on_e)
+min_natemp_evo <- coord(rawD_natemp_on_e-rawSE_natemp_on_e)
+min_cutemp_evo <- coord(rawD_cutemp_on_e-rawSE_cutemp_on_e)
+
+###### population coords ########
+coord_nacu_con_pop <- coord(mgrowth_Control_in_Control-
+                                   Control_in_NaCu$mean_growth)
+coord_natemp_con_pop <-coord(mgrowth_Control_in_Control-
+                                    Control_in_NaTemp$mean_growth)
+coord_cutemp_con_pop <-coord(mgrowth_Control_in_Control-
+                                    Control_in_CuTemp$mean_growth)
+coord_all_con_pop <- coord(mgrowth_Control_in_Control-
+                                  Control_in_All$mean_growth)
+coord_nacu_evo_pop <- coord(mgrowth_Control_in_Control-
+                                   NaCu_in_NaCu$mean_growth)
+coord_natemp_evo_pop <- coord(mgrowth_Control_in_Control-
+                                     NaTemp_in_NaTemp$mean_growth)
+coord_cutemp_evo_pop <- coord(mgrowth_Control_in_Control-
+                                     CuTemp_in_CuTemp$mean_growth)
+coord_all_evo_pop <- coord(mgrowth_Control_in_Control-
+                                  All_in_All$mean_growth)
+
+#### additive expectation for 3D video #####
+coord_all_con_add <- coord(rawD_na_on_c+rawD_cu_on_c+rawD_temp_on_c)
+coord_all_evo_add <- coord(rawD_na_on_e+rawD_cu_on_e+rawD_temp_on_e)
+
+```
+
+
+- **Plot figure 3(a)**
+
+```{r, echo=FALSE, fig.width=7.5, fig.height=2.5, include=TRUE}
+
+layout(matrix(c(1, 2, 3),
+              nrow=1, byrow=TRUE))
+
+################################# NaCu #######################################
+
+plot(1, type="n", xlab="", ylab="", bty = "n", yaxt = 'n', xaxt = 'n',
+     cex.main = 2.5,
+     xlim=c(-0.05, 0.205), ylim=c(-0.05, 0.205))
+     #xlim=c(-0.05, 0.16), ylim=c(-0.05, 0.16))
+
+axis(side = 1, pos = 0.0,
+     at = c(-0.05, 0.05, 0.1, 0.15, 0.2), 
+     labels = c("-5", "5", "10", "15", "20"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+axis(side = 2, pos = 0.0,
+     at = c(-0.05, 0.05, 0.1, 0.15, 0.2), 
+     labels = c("-5", "5", "10", "15", "20"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+segments(x0 = -0.03,
+         x1 = 0.15,
+         y0 = -0.03,
+         y1 = 0.15,
+         lwd = 1)
+
+draw.radial.line(0, 0.005, center=c(0.05, 0.05), deg=315, lwd = 1, expand = F)
+draw.radial.line(0, 0.005, center=c(0.10, 0.10), deg=315, lwd = 1, expand = F)
+draw.radial.line(0, 0.005, center=c(0.15, 0.15), deg=315, lwd = 1, expand = F)
+text(x = c(0.05, 0.1, 0.15)+0.012,
+     y = c(0.05, 0.1, 0.15)-0.012,
+     srt = 45,
+     labels = c("10", "20", "30"),
+     cex = 1.9)
+
+axis(side = 2, pos = 0.0,
+     at = c(-0.05, 0.05, 0.1, 0.15), 
+     labels = c("-5", "5", "10", "15"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+arrows( x0 = c(rawD_na_on_c+rawSE_na_on_c, rawD_na_on_e+rawSE_na_on_e, 0, 0),
+        x1 = c(rawD_na_on_c-rawSE_na_on_c, rawD_na_on_e-rawSE_na_on_e, 0, 0),
+        y0 = c(0, 0, rawD_cu_on_c+rawSE_cu_on_c, rawD_cu_on_e+rawSE_cu_on_e), 
+        y1 = c(0, 0, rawD_cu_on_c-rawSE_cu_on_c, rawD_cu_on_e-rawSE_cu_on_e),
+        col = c(j.blue, j.red, j.blue, j.red),
+        code = 3, length = 0.07, angle = 90, lwd = 4)
+
+arrows( x0 = c(plus_nacu_con, plus_nacu_evo),
+        x1 = c(min_nacu_con, min_nacu_evo),
+        y0 = c(plus_nacu_con, plus_nacu_evo), 
+        y1 = c(min_nacu_con, min_nacu_evo),
+        col = c(j.blue, j.red),
+        code = 3, length = 0.07, angle = 90, lwd = 4)
+
+points(x = c(rawD_na_on_c, 0, rawD_na_on_e, 0, coord_nacu_con, coord_nacu_evo),
+       y = c(0, rawD_cu_on_c, 0, rawD_cu_on_e, coord_nacu_con, coord_nacu_evo),
+       col = c(j.blue, j.blue, j.red, j.red, j.blue, j.red), pch = 19, cex = 7)
+
+text(x = c(rawD_na_on_c, 0, rawD_na_on_e, 0, coord_nacu_con, coord_nacu_evo),
+       y = c(0, rawD_cu_on_c, 0, rawD_cu_on_e, coord_nacu_con, coord_nacu_evo),
+     labels = c("S", "C", "S'", "C'", "SC", "SC'"), family = "Times", 
+     col = rgb(0.4, 0.4, 0.4), cex = 2.)
+
+## Add populations
+points(x = c(mgrowth_Control_in_Control-Control_in_Na$mean_growth),
+       y = c(0, 0, 0, 0),
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1.75)
+points(y = c(mgrowth_Control_in_Control-Control_in_Cu$mean_growth),
+       x = c(0, 0, 0, 0),
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1.75)
+points(x = c(mgrowth_Control_in_Control-Na_in_Na$mean_growth),
+       y = c(0, 0, 0, 0),
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1.75)
+points(y = c(mgrowth_Control_in_Control-Cu_in_Cu$mean_growth),
+       x = c(0, 0, 0),
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1.75)
+points(y = coord_nacu_con_pop,
+       x = coord_nacu_con_pop,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1.75)
+points(y = coord_nacu_evo_pop,
+       x = coord_nacu_evo_pop,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1.75)
+
+################################# NaTemp ######################################
+
+plot(1, type="n", xlab="", ylab="", bty = "n", yaxt = 'n', xaxt = 'n',
+     cex.main = 2.5,
+     xlim=c(-0.05, 0.205), ylim=c(-0.05, 0.205))
+     #xlim=c(-0.05, 0.16), ylim=c(-0.05, 0.16))
+
+axis(side = 1, pos = 0.0,
+     at = c(-0.05, 0.05, 0.1, 0.15, 0.2), 
+     labels = c("-5", "5", "10", "15", "20"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+axis(side = 2, pos = 0.0,
+     at = c(-0.05, 0.05, 0.1, 0.15, 0.2), 
+     labels = c("-5", "5", "10", "15", "20"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+segments(x0 = -0.03,
+         x1 = 0.15,
+         y0 = -0.03,
+         y1 = 0.15,
+         lwd = 1)
+
+draw.radial.line(0, 0.005, center=c(0.05, 0.05), deg=315, lwd = 1, expand = F)
+draw.radial.line(0, 0.005, center=c(0.10, 0.10), deg=315, lwd = 1, expand = F)
+draw.radial.line(0, 0.005, center=c(0.15, 0.15), deg=315, lwd = 1, expand = F)
+text(x = c(0.05, 0.1, 0.15)+0.012,
+     y = c(0.05, 0.1, 0.15)-0.012,
+     srt = 45,
+     labels = c("10", "20", "30"),
+     cex = 1.9)
+
+arrows( x0 = c(plus_natemp_con, plus_natemp_evo),
+        x1 = c(min_natemp_con, min_natemp_evo),
+        y0 = c(plus_natemp_con, plus_natemp_evo), 
+        y1 = c(min_natemp_con, min_natemp_evo),
+        col = c(j.blue, j.red),
+        code = 3, length = 0.07, angle = 90, lwd = 4)
+
+arrows( x0 = c(rawD_na_on_c+rawSE_na_on_c, rawD_na_on_e+rawSE_na_on_e, 0, 0),
+        x1 = c(rawD_na_on_c-rawSE_na_on_c, rawD_na_on_e-rawSE_na_on_e, 0, 0),
+        y0 = c(0, 0, rawD_temp_on_c+rawSE_temp_on_c, 
+               rawD_temp_on_e+rawSE_temp_on_e), 
+        y1 = c(0, 0, rawD_temp_on_c-rawSE_temp_on_c, 
+               rawD_temp_on_e-rawSE_temp_on_e),
+        col = c(j.blue, j.red, j.blue, j.red),
+        code = 3, length = 0.07, angle = 90, lwd = 4)
+
+points(x = c(rawD_na_on_c, 0, rawD_na_on_e, 0),
+       y = c(0, rawD_temp_on_c, 0, rawD_temp_on_e),
+       col = c(j.blue, j.blue, j.red, j.red), pch = 19, cex = 7)
+
+text(x = c(rawD_na_on_c, 0, rawD_na_on_e, 0),
+       y = c(0, rawD_temp_on_c, 0, rawD_temp_on_e),
+     labels = c("S", "T", "S'", "T'"), family = "Times", 
+     col = rgb(0.4, 0.4, 0.4), cex = 2.25)
+
+points(x = c(coord_natemp_con, coord_natemp_evo),
+       y = c(coord_natemp_con, coord_natemp_evo),
+       col = c(j.blue, j.red), pch = 19, cex = 7)
+
+text(x = c(coord_natemp_con, coord_natemp_evo),
+       y = c(coord_natemp_con, coord_natemp_evo),
+     labels = c("ST", "ST'"), family = "Times", 
+     col = rgb(0.4, 0.4, 0.4), cex = 2.)
+
+## Add populations
+points(x = c(mgrowth_Control_in_Control-Control_in_Na$mean_growth),
+       y = c(0, 0, 0, 0),
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1.75)
+points(y = c(mgrowth_Control_in_Control-Control_in_Temp$mean_growth),
+       x = c(0, 0, 0, 0),
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1.75)
+points(x = c(mgrowth_Control_in_Control-Na_in_Na$mean_growth),
+       y = c(0, 0, 0, 0),
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1.75)
+points(y = c(mgrowth_Control_in_Control-Temp_in_Temp$mean_growth),
+       x = c(0, 0, 0, 0),
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1.75)
+points(y = coord_natemp_con_pop,
+       x = coord_natemp_con_pop,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1.75)
+points(y = coord_natemp_evo_pop,
+       x = coord_natemp_evo_pop,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1.75)
+
+
+################################# CuTemp #######################################
+
+
+plot(1, type="n", xlab="", ylab="", bty = "n", yaxt = 'n', xaxt = 'n',
+     cex.main = 2.5,
+     xlim=c(-0.05, 0.205), ylim=c(-0.05, 0.205)) 
+     #xlim=c(-0.05, 0.16), ylim=c(-0.05, 0.16))
+
+axis(side = 1, pos = 0.0,
+     at = c(-0.05, 0.05, 0.1, 0.15, 0.2), 
+     labels = c("-5", "5", "10", "15", "20"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+axis(side = 2, pos = 0.0,
+     at = c(-0.05, 0.05, 0.1, 0.15, 0.2), 
+     labels = c("-5", "5", "10", "15", "20"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+segments(x0 = -0.03,
+         x1 = 0.15,
+         y0 = -0.03,
+         y1 = 0.15,
+         lwd = 1)
+
+draw.radial.line(0, 0.005, center=c(0.05, 0.05), deg=315, lwd = 1, expand = F)
+draw.radial.line(0, 0.005, center=c(0.10, 0.10), deg=315, lwd = 1, expand = F)
+draw.radial.line(0, 0.005, center=c(0.15, 0.15), deg=315, lwd = 1, expand = F)
+text(x = c(0.05, 0.1, 0.15)+0.012,
+     y = c(0.05, 0.1, 0.15)-0.012,
+     srt = 45,
+     labels = c("10", "20", "30"),
+     cex = 1.9)
+
+arrows( x0 = c(plus_cutemp_con, plus_cutemp_evo),
+        x1 = c(min_cutemp_con, min_cutemp_evo),
+        y0 = c(plus_cutemp_con, plus_cutemp_evo), 
+        y1 = c(min_cutemp_con, min_cutemp_evo),
+        col = c(j.blue, j.red),
+        code = 3, length = 0.07, angle = 90, lwd = 4)
+
+arrows( x0 = c(rawD_cu_on_c+rawSE_cu_on_c, rawD_cu_on_e+rawSE_cu_on_e, 0, 0),
+        x1 = c(rawD_cu_on_c-rawSE_cu_on_c, rawD_cu_on_e-rawSE_cu_on_e, 0, 0),
+        y0 = c(0, 0, rawD_temp_on_c+rawSE_temp_on_c, 
+               rawD_temp_on_e+rawSE_temp_on_e), 
+        y1 = c(0, 0, rawD_temp_on_c-rawSE_temp_on_c, 
+               rawD_temp_on_e-rawSE_temp_on_e),
+        col = c(j.blue, j.red, j.blue, j.red),
+        code = 3, length = 0.07, angle = 90, lwd = 4)
+
+points(x = c(rawD_cu_on_c, 0, rawD_cu_on_e, 0),
+       y = c(0, rawD_temp_on_c, 0, rawD_temp_on_e),
+       col = c(j.blue, j.blue, j.red, j.red), pch = 19, cex = 7)
+
+text(x = c(rawD_cu_on_c, 0, rawD_cu_on_e, 0),
+       y = c(0, rawD_temp_on_c, 0, rawD_temp_on_e),
+     labels = c("C", "T", "C'", "T'"), family = "Times", 
+     col = rgb(0.4, 0.4, 0.4), cex = 2)
+
+points(x = c(coord_cutemp_con, coord_cutemp_evo),
+       y = c(coord_cutemp_con, coord_cutemp_evo),
+       col = c(j.blue, j.red), pch = 19, cex = 7)
+
+text(x = c(coord_cutemp_con, coord_cutemp_evo),
+       y = c(coord_cutemp_con, coord_cutemp_evo),
+     labels = c("CT", "CT'"), family = "Times", 
+     col = rgb(0.4, 0.4, 0.4), cex = 2)
+
+## Add populations
+points(x = c(mgrowth_Control_in_Control-Control_in_Cu$mean_growth),
+       y = c(0, 0, 0, 0),
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1.75)
+points(y = c(mgrowth_Control_in_Control-Control_in_Temp$mean_growth),
+       x = c(0, 0, 0, 0),
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1.75)
+points(x = c(mgrowth_Control_in_Control-Cu_in_Cu$mean_growth),
+       y = c(0, 0, 0),
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1.75)
+points(y = c(mgrowth_Control_in_Control-Temp_in_Temp$mean_growth),
+       x = c(0, 0, 0, 0),
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1.75)
+points(y = coord_cutemp_con_pop,
+       x = coord_cutemp_con_pop,
+       col = rgb(0, 0, 0, 0.05), bg = j.blue_alpha, pch = 21, cex = 1.75)
+points(y = coord_cutemp_evo_pop,
+       x = coord_cutemp_evo_pop,
+       col = rgb(0, 0, 0, 0.05), bg = j.red_alpha, pch = 21, cex = 1.75)
+
+
+```
+
+<br>
+
+- **Calculate means of populations and cost of removing stressors** 
+
+```{r, echo=TRUE}
+
+### gathering mean data points 
+mgrowth_NaCu_in_Na <- mean(NaCu_in_Na$mean_growth)
+mgrowth_NaCu_in_Cu <- mean(NaCu_in_Cu$mean_growth)
+mgrowth_NaTemp_in_Na <- mean(NaTemp_in_Na$mean_growth)
+mgrowth_NaTemp_in_Temp <- mean(NaTemp_in_Temp$mean_growth)
+mgrowth_CuTemp_in_Cu <- mean(CuTemp_in_Cu$mean_growth)
+mgrowth_CuTemp_in_Temp <- mean(CuTemp_in_Temp$mean_growth)
+mgrowth_All_in_Na <- mean(All_in_Na$mean_growth)
+mgrowth_All_in_Cu <- mean(All_in_Cu$mean_growth)
+mgrowth_All_in_Temp <- mean(All_in_Temp$mean_growth)
+mgrowth_Na_in_Control <- mean(Na_in_Control$mean_growth)
+mgrowth_Cu_in_Control <- mean(Cu_in_Control$mean_growth)
+mgrowth_Temp_in_Control <- mean(Temp_in_Control$mean_growth)
+
+### So that removing a stressor can be accounted for ### 
+Na_removed <- mgrowth_Na_in_Na-mgrowth_Na_in_Control 
+Cu_removed <- mgrowth_Cu_in_Cu-mgrowth_Cu_in_Control
+Temp_removed <- mgrowth_Temp_in_Temp-mgrowth_Temp_in_Control
+```
+
+- **Plot figure 3(b)**
+
+```{r, echo=FALSE, fig.width=7.5, fig.height=5, include=TRUE}
+
+layout(matrix(c(1, 2, 3,
+                4, 5, 6),
+              nrow=2, byrow=TRUE))
+
+
+############ NaCu Raw Data ############
+
+plot(1, type="n", xlab="", ylab="", bty = "n", yaxt = 'n', xaxt = 'n',
+     cex.main = 2.5,
+     xlim=c(-0.01, 0.26), ylim=c(-0.01, 0.26))
+
+axis(side = 1, pos = 0.0,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("", "5", "10", "15", "20", "25"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+axis(side = 2, pos = 0.0,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("", "5", "10", "15", "20", "25"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+
+### Control points ### 
+points(x = Control_in_Na$mean_growth,
+       y = Control_in_Cu$mean_growth,
+       col = j.blue_alpha, pch = 19, cex = 5)
+
+points(x = c(Na_in_Na$mean_growth, 
+             Cu_in_Na$mean_growth+Cu_removed),
+       y = c(Na_in_Cu$mean_growth+Na_removed, 
+             Cu_in_Cu$mean_growth),
+       col = j.red, pch = 19, cex = 5)
+
+points(x = NaCu_in_Na$mean_growth+Cu_removed,
+       y = NaCu_in_Cu$mean_growth+Na_removed,
+       col = j.red, pch = 19, cex = 5)
+
+text(x = c(Na_in_Na$mean_growth, 
+           Cu_in_Na$mean_growth+Cu_removed, 
+           NaCu_in_Na$mean_growth+Cu_removed),
+       y = c(Na_in_Cu$mean_growth+Na_removed, 
+             Cu_in_Cu$mean_growth, 
+             NaCu_in_Cu$mean_growth+Na_removed),
+     labels=c(Na_in_Na$label, 
+              Cu_in_Cu$label,
+              NaCu_in_NaCu$label), 
+     family = "Times", cex = 1.5, col = rgb(0.3, 0.3, 0.3))
+
+
+points(x = mgrowth_Control_in_Control,
+       y = mgrowth_Control_in_Control,
+       col = "black", pch = 19, cex = 2)
+
+
+############ NaTemp Raw Data ############
+
+plot(1, type="n", xlab="", ylab="", bty = "n", yaxt = 'n', xaxt = 'n',
+     cex.main = 2.5,
+     xlim=c(-0.01, 0.26), ylim=c(-0.01, 0.26))
+
+axis(side = 1, pos = 0.0,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("", "5", "10", "15", "20", "25"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+axis(side = 2, pos = 0.0,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("", "5", "10", "15", "20", "25"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+### Control points ### 
+points(x = Control_in_Na$mean_growth,
+       y = Control_in_Temp$mean_growth,
+       col = j.blue_alpha, pch = 19, cex = 5)
+
+points(x = c(Na_in_Na$mean_growth, 
+             Temp_in_Na$mean_growth+Temp_removed),
+       y = c(Na_in_Temp$mean_growth+Na_removed, 
+             Temp_in_Temp$mean_growth),
+       col = j.red, pch = 19, cex = 5)
+
+points(x = NaTemp_in_Na$mean_growth+Temp_removed,
+       y = NaTemp_in_Temp$mean_growth+Na_removed,
+       col = j.red, pch = 19, cex = 5)
+
+text(x = c(Na_in_Na$mean_growth, 
+             Temp_in_Na$mean_growth+Temp_removed, 
+             NaTemp_in_Na$mean_growth+Temp_removed),
+       y = c(Na_in_Temp$mean_growth+Na_removed, 
+             Temp_in_Temp$mean_growth, 
+             NaTemp_in_Temp$mean_growth+Na_removed),
+     labels=c(Na_in_Na$label, 
+              Temp_in_Temp$label,
+              NaTemp_in_NaTemp$label), 
+     family = "Times", cex = 1.5, col = rgb(0.3, 0.3, 0.3))
+
+points(x = mgrowth_Control_in_Control,
+       y = mgrowth_Control_in_Control,
+       col = "black", pch = 19, cex = 2)
+
+############ CuTemp Raw Data ############
+
+plot(1, type="n", xlab="", ylab="", bty = "n", yaxt = 'n', xaxt = 'n',
+     cex.main = 2.5,
+     xlim=c(-0.01, 0.26), ylim=c(-0.01, 0.26))
+
+axis(side = 1, pos = 0.0,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("", "5", "10", "15", "20", "25"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+axis(side = 2, pos = 0.0,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("", "5", "10", "15", "20", "25"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+### Control points ### 
+points(x = Control_in_Cu$mean_growth,
+       y = Control_in_Temp$mean_growth,
+       col = j.blue_alpha, pch = 19, cex = 5)
+
+points(x = c(Cu_in_Cu$mean_growth, 
+             Temp_in_Cu$mean_growth+Temp_removed),
+       y = c(Cu_in_Temp$mean_growth+Cu_removed, 
+             Temp_in_Temp$mean_growth),
+       col = j.red, pch = 19, cex = 5)
+
+points(x = CuTemp_in_Cu$mean_growth+Temp_removed,
+       y = CuTemp_in_Temp$mean_growth+Cu_removed,
+       col = j.red, pch = 19, cex = 5)
+
+text(x = c(Cu_in_Cu$mean_growth, 
+             Temp_in_Cu$mean_growth+Temp_removed, 
+             CuTemp_in_Cu$mean_growth+Temp_removed),
+       y = c(Cu_in_Temp$mean_growth+Cu_removed, 
+             Temp_in_Temp$mean_growth, 
+             CuTemp_in_Temp$mean_growth+Cu_removed),
+     labels=c(Cu_in_Cu$label, 
+              Temp_in_Temp$label,
+              CuTemp_in_CuTemp$label), 
+     family = "Times", cex = 1.5, col = rgb(0.3, 0.3, 0.3))
+
+points(x = mgrowth_Control_in_Control,
+       y = mgrowth_Control_in_Control,
+       col = "black", pch = 19, cex = 2)
+
+################# Bottom ####################
+
+############ NaCu Means  ############
+
+plot(1, type="n", xlab="", ylab="", bty = "n", yaxt = 'n', xaxt = 'n',
+     cex.main = 2.5,
+     xlim=c(-0.01, 0.26), ylim=c(-0.01, 0.26))
+
+axis(side = 1, pos = 0.0,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("", "5", "10", "15", "20", "25"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+axis(side = 2, pos = 0.0,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("", "5", "10", "15", "20", "25"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+
+points(x = c(mgrowth_Control_in_Na, mgrowth_NaCu_in_Na+Cu_removed, mgrowth_Control_in_Control),
+       y = c(mgrowth_Control_in_Cu, mgrowth_NaCu_in_Cu+Na_removed, mgrowth_Control_in_Control),
+       col = c(j.blue, j.red, "black"), pch = 19, cex = c(8, 8, 2))
+
+points(x = c(mgrowth_Control_in_Na, 0, mgrowth_Na_in_Na, 0),
+       y = c(0, mgrowth_Control_in_Cu, 0, mgrowth_Cu_in_Cu),
+       col = c(j.blue, j.blue, j.red, j.red), pch = 19, cex = 8)
+
+arrows(x0 = c(mgrowth_Control_in_Na+segrowth_Control_in_Na, 
+              mgrowth_Na_in_Na+segrowth_Na_in_Na,
+             0, 0),
+      x1 = c(mgrowth_Control_in_Na-segrowth_Control_in_Na, 
+              mgrowth_Na_in_Na-segrowth_Na_in_Na,
+             0, 0),
+      y0 = c(0, 0,
+             mgrowth_Control_in_Cu+segrowth_Control_in_Cu, 
+             mgrowth_Cu_in_Cu+segrowth_Cu_in_Cu),
+      y1 = c(0, 0,
+             mgrowth_Control_in_Cu-segrowth_Control_in_Cu, 
+             mgrowth_Cu_in_Cu-segrowth_Cu_in_Cu),
+       col = c(j.blue, j.red),
+       code = 3, length = 0.07, angle = 90, lwd = 4)
+
+arrows(x0 = c(mgrowth_Control_in_Na+segrowth_Control_in_Na,
+              mgrowth_NaCu_in_Na+std.error(NaCu_in_Na$mean_growth)+Cu_removed,
+              mgrowth_Control_in_Na, 
+              mgrowth_NaCu_in_Na+Cu_removed), 
+       
+       x1 = c(mgrowth_Control_in_Na-segrowth_Control_in_Na,
+              mgrowth_NaCu_in_Na-std.error(NaCu_in_Na$mean_growth)+Cu_removed,
+              mgrowth_Control_in_Na, 
+              mgrowth_NaCu_in_Na+Cu_removed), 
+       
+       y0 = c(mgrowth_Control_in_Cu, 
+              mgrowth_NaCu_in_Cu+Na_removed,
+              mgrowth_Control_in_Cu+segrowth_Control_in_Cu,
+              mgrowth_NaCu_in_Cu+std.error(NaCu_in_Cu$mean_growth)+Na_removed), 
+       
+       y1 = c(mgrowth_Control_in_Cu, 
+              mgrowth_NaCu_in_Cu+Na_removed, 
+              mgrowth_Control_in_Cu-segrowth_Control_in_Cu,
+              mgrowth_NaCu_in_Cu-std.error(NaCu_in_Cu$mean_growth)+Na_removed),
+       col = c(j.blue, j.red, j.blue, j.red),
+       code = 3, length = 0.07, angle = 90, lwd = 4)
+
+
+
+text(x = c(mgrowth_Control_in_Na, 0, mgrowth_Na_in_Na, 0),
+       y = c(0, mgrowth_Control_in_Cu, 0, mgrowth_Cu_in_Cu),
+     labels = c("S", "C", "S'", "C'"), family = "Times", 
+     col = rgb(0.4, 0.4, 0.4), cex = 2)
+
+text(x = c(mgrowth_Control_in_Na, mgrowth_NaCu_in_Na+Cu_removed),
+     y = c(mgrowth_Control_in_Cu, mgrowth_NaCu_in_Cu+Na_removed),
+     labels = c("SC", "SC'"), family = "Times", 
+     col = rgb(0.4, 0.4, 0.4), cex = 2)
+
+############ NaTemp Means  ############
+
+plot(1, type="n", xlab="", ylab="", bty = "n", yaxt = 'n', xaxt = 'n',
+     cex.main = 2.5,
+     xlim=c(-0.01, 0.26), ylim=c(-0.01, 0.26))
+
+axis(side = 1, pos = 0.0,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("", "5", "10", "15", "20", "25"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+axis(side = 2, pos = 0.0,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("", "5", "10", "15", "20", "25"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+
+points(x = c(mgrowth_Control_in_Na, mgrowth_NaTemp_in_Na+Temp_removed, mgrowth_Control_in_Control),
+       y = c(mgrowth_Control_in_Temp, mgrowth_NaTemp_in_Temp+Na_removed, mgrowth_Control_in_Control),
+       col = c(j.blue, j.red, "black"), pch = 19, cex = c(8, 8, 2))
+
+
+points(x = c(mgrowth_Control_in_Na, 0, mgrowth_Na_in_Na, 0),
+       y = c(0, mgrowth_Control_in_Temp, 0, mgrowth_Temp_in_Temp),
+       col = c(j.blue, j.blue, j.red, j.red), pch = 19, cex = 8)
+
+
+arrows(x0 = c(mgrowth_Control_in_Na+segrowth_Control_in_Na, 
+              mgrowth_Na_in_Na+segrowth_Na_in_Na,
+             0, 0),
+      x1 = c(mgrowth_Control_in_Na-segrowth_Control_in_Na, 
+              mgrowth_Na_in_Na-segrowth_Na_in_Na,
+             0, 0),
+      y0 = c(0, 0,
+             mgrowth_Control_in_Temp+segrowth_Control_in_Temp, 
+             mgrowth_Temp_in_Temp+segrowth_Temp_in_Temp),
+      y1 = c(0, 0,
+             mgrowth_Control_in_Temp-segrowth_Control_in_Temp, 
+              mgrowth_Temp_in_Temp-segrowth_Temp_in_Temp),
+       col = c(j.blue, j.red),
+       code = 3, length = 0.07, angle = 90, lwd = 4)
+
+arrows(x0 = c(mgrowth_Control_in_Na+segrowth_Control_in_Na,
+              mgrowth_NaTemp_in_Na+std.error(NaTemp_in_Na$mean_growth)+Temp_removed,
+              mgrowth_Control_in_Na, 
+              mgrowth_NaTemp_in_Na+Temp_removed), 
+       
+       x1 = c(mgrowth_Control_in_Na-segrowth_Control_in_Na,
+              mgrowth_NaTemp_in_Na-std.error(NaTemp_in_Na$mean_growth)+Temp_removed,
+              mgrowth_Control_in_Na, 
+              mgrowth_NaTemp_in_Na+Temp_removed), 
+       
+       y0 = c(mgrowth_Control_in_Temp, 
+              mgrowth_NaTemp_in_Temp+Na_removed,
+              mgrowth_Control_in_Temp+segrowth_Control_in_Temp,
+              mgrowth_NaTemp_in_Temp+std.error(NaTemp_in_Temp$mean_growth)+Na_removed), 
+       
+       y1 = c(mgrowth_Control_in_Temp, 
+              mgrowth_NaTemp_in_Temp+Na_removed, 
+              mgrowth_Control_in_Temp-segrowth_Control_in_Temp,
+              mgrowth_NaTemp_in_Temp-std.error(NaTemp_in_Temp$mean_growth)+Na_removed),
+       col = c(j.blue, j.red, j.blue, j.red),
+       code = 3, length = 0.07, angle = 90, lwd = 4)
+
+text(x = c(mgrowth_Control_in_Na, 0, mgrowth_Na_in_Na, 0),
+       y = c(0, mgrowth_Control_in_Temp, 0, mgrowth_Temp_in_Temp),
+     labels = c("S", "T", "S'", "T'"), family = "Times", 
+     col = rgb(0.4, 0.4, 0.4), cex = 2)
+
+text(x = c(mgrowth_Control_in_Na, mgrowth_NaTemp_in_Na+Temp_removed),
+     y = c(mgrowth_Control_in_Temp, mgrowth_NaTemp_in_Temp+Na_removed),
+     labels = c("ST", "ST'"), family = "Times", 
+     col = rgb(0.4, 0.4, 0.4), cex = 2)
+
+############ CuTemp Means  ############
+
+plot(1, type="n", xlab="", ylab="", bty = "n", yaxt = 'n', xaxt = 'n',
+     cex.main = 2.5,
+     xlim=c(-0.01, 0.26), ylim=c(-0.01, 0.26))
+
+axis(side = 1, pos = 0.0,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("", "5", "10", "15", "20", "25"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+axis(side = 2, pos = 0.0,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("", "5", "10", "15", "20", "25"),
+     cex.axis=2, las=1, lwd=1, lwd.ticks = 1)
+
+points(x = c(mgrowth_Control_in_Cu, mgrowth_CuTemp_in_Cu+Temp_removed, mgrowth_Control_in_Control),
+       y = c(mgrowth_Control_in_Temp, mgrowth_CuTemp_in_Temp+Cu_removed, mgrowth_Control_in_Control),
+       col = c(j.blue, j.red, "black"), pch = 19, cex = c(8, 8, 2))
+
+points(x = c(mgrowth_Control_in_Cu, 0, mgrowth_Cu_in_Cu, 0),
+       y = c(0, mgrowth_Control_in_Temp, 0, mgrowth_Temp_in_Temp),
+       col = c(j.blue, j.blue, j.red, j.red), pch = 19, cex = 8)
+
+
+arrows(x0 = c(mgrowth_Control_in_Cu+segrowth_Control_in_Cu, 
+              mgrowth_Cu_in_Cu+segrowth_Cu_in_Cu,
+             0, 0),
+      x1 = c(mgrowth_Control_in_Cu-segrowth_Control_in_Cu, 
+             mgrowth_Cu_in_Cu-segrowth_Cu_in_Cu, 
+             0, 0),
+      y0 = c(0, 0,
+             mgrowth_Control_in_Temp+segrowth_Control_in_Temp, 
+             mgrowth_Temp_in_Temp+segrowth_Temp_in_Temp),
+      y1 = c(0, 0,
+             mgrowth_Control_in_Temp-segrowth_Control_in_Temp, 
+              mgrowth_Temp_in_Temp-segrowth_Temp_in_Temp),
+       col = c(j.blue, j.red),
+       code = 3, length = 0.07, angle = 90, lwd = 4)
+
+
+arrows(x0 = c(mgrowth_Control_in_Cu+segrowth_Control_in_Cu,
+              mgrowth_CuTemp_in_Cu+std.error(CuTemp_in_Cu$mean_growth)+Temp_removed,
+              mgrowth_Control_in_Cu, 
+              mgrowth_CuTemp_in_Cu+Temp_removed), 
+       
+       x1 = c(mgrowth_Control_in_Cu-segrowth_Control_in_Cu,
+              mgrowth_CuTemp_in_Cu-std.error(CuTemp_in_Cu$mean_growth)+Temp_removed,
+              mgrowth_Control_in_Cu, 
+              mgrowth_CuTemp_in_Cu+Temp_removed), 
+       
+       y0 = c(mgrowth_Control_in_Temp, 
+              mgrowth_CuTemp_in_Temp+Cu_removed,
+              mgrowth_Control_in_Temp+segrowth_Control_in_Temp,
+              mgrowth_CuTemp_in_Temp+std.error(CuTemp_in_Temp$mean_growth)+Cu_removed), 
+       
+       y1 = c(mgrowth_Control_in_Temp, 
+              mgrowth_CuTemp_in_Temp+Cu_removed, 
+              mgrowth_Control_in_Temp-segrowth_Control_in_Temp,
+              mgrowth_CuTemp_in_Temp-std.error(CuTemp_in_Temp$mean_growth)+Cu_removed),
+       col = c(j.blue, j.red, j.blue, j.red),
+       code = 3, length = 0.07, angle = 90, lwd = 4)
+                
+
+
+text(x = c(mgrowth_Control_in_Cu, 0, mgrowth_Cu_in_Cu, 0),
+       y = c(0, mgrowth_Control_in_Temp, 0, mgrowth_Temp_in_Temp),
+     labels = c("C", "T", "C'", "T'"), family = "Times", 
+     col = rgb(0.4, 0.4, 0.4), cex = 2)
+
+text(x = c(mgrowth_Control_in_Cu, mgrowth_CuTemp_in_Cu+Temp_removed),
+     y = c(mgrowth_Control_in_Temp, mgrowth_CuTemp_in_Temp+Cu_removed),
+     labels = c("CT", "CT'"), family = "Times", 
+     col = rgb(0.4, 0.4, 0.4), cex = 2)
+
+```
+
+<br>
+
+### Figure 4 
+
+<br>
+
+- **Organise data for plotting**
+
+```{r, echo=TRUE}
+
+# Calculate means, sd and se of growth rate for all factors in treat_num 
+q1_means <- with(rot_pop, tapply(mean_growth, treat_num, mean))  
+q1_sd <- with(rot_pop, tapply(mean_growth, treat_num, sd))
+q1_se <- with(rot_pop, tapply(mean_growth, treat_num, std.error))                        
+#q1_means[["64"]] # this is a way of calling the mean for treat_num_f "64"
+
+##################### QUESTION 1 #############################
+
+mean <- c(q1_means[["9"]], q1_means[["17"]], q1_means[["25"]], 
+          q1_means[["33"]], q1_means[["41"]], q1_means[["49"]], 
+          q1_means[["57"]], q1_means[["10"]], q1_means[["19"]], 
+          q1_means[["28"]], q1_means[["37"]], q1_means[["46"]],
+          q1_means[["55"]], q1_means[["64"]])
+
+sd <- c(q1_sd[["9"]], q1_sd[["17"]], q1_sd[["25"]], q1_sd[["33"]], 
+        q1_sd[["41"]], q1_sd[["49"]], q1_sd[["57"]], q1_sd[["10"]], 
+        q1_sd[["19"]], q1_sd[["28"]], q1_sd[["37"]], q1_sd[["46"]], 
+        q1_sd[["55"]], q1_sd[["64"]])
+
+se <- c(q1_se[["9"]], q1_se[["17"]], q1_se[["25"]], q1_se[["33"]], 
+        q1_se[["41"]], q1_se[["49"]], q1_se[["57"]], q1_se[["10"]], 
+        q1_se[["19"]], q1_se[["28"]], q1_se[["37"]], q1_se[["46"]], 
+        q1_se[["55"]], q1_se[["64"]])
+
+evolline <- c("Na", "Cu", "Temp", "NaCu", "NaTemp", "CuTemp", "All",
+              "Na", "Cu", "Temp", "NaCu", "NaTemp", "CuTemp", "All")
+
+evolline_1 <- c("S", "C", "T", "SC", "ST", "CT", "SCT",
+              "S", "C", "T", "SC", "ST", "CT", "SCT")
+
+### Ordered so pops can be plotted easily ### 
+group <- c(0.8, 0.7, 0.9, 1.2, 1.1, 1.3, 1,
+           -0.2, -0.3, -0.1, 0, 0.2, 0.1, 0.3) # added jitter
+
+group_f <- c("removed", "removed", "removed", 
+             "removed", "removed", "removed", "removed",
+             "evolved", "evolved", "evolved", "evolved", 
+             "evolved", "evolved", "evolved")
+
+question_1_plot <- data.frame(evolline, evolline_1, group, 
+                              group_f, mean, sd, se) 
+
+question_1_plot$group_f <- factor(question_1_plot$group_f, 
+                                  levels = c("evolved", "removed"))
+question_1_plot$evolline <- factor(question_1_plot$evolline, 
+                                   levels = c("Na", "Cu", "Temp", "NaCu", 
+                                              "NaTemp", "CuTemp", "All"))
+
+
+################## QUESTION 2 ######################
+
+
+figure_3b <- rot_pop %>% filter(treat_num == 64 | treat_num == 63 |  
+           treat_num == 62 |treat_num == 61)
+  
+figure_3b$environment_f <- factor(figure_3b$Environment, 
+                                  levels = c("8", "5", "6", "7"))
+figure_3b$environment_n <- as.numeric(figure_3b$environment_f)
+
+### Calculate grand mean and se 
+
+all_mean <- mean(figure_3b$mean_growth[figure_3b$treat_num == 64])
+nacu_mean <- mean(figure_3b$mean_growth[figure_3b$treat_num == 61])
+natemp_mean <- mean(figure_3b$mean_growth[figure_3b$treat_num == 62])
+cutemp_mean <- mean(figure_3b$mean_growth[figure_3b$treat_num == 63])
+all_se <- std.error(figure_3b$mean_growth[figure_3b$treat_num == 64])
+nacu_se <- std.error(figure_3b$mean_growth[figure_3b$treat_num == 61])
+natemp_se <- std.error(figure_3b$mean_growth[figure_3b$treat_num == 62])
+cutemp_se <- std.error(figure_3b$mean_growth[figure_3b$treat_num == 63])
+
+``` 
+
+- **Plot figure**
+
+```{r, echo=FALSE, fig.width=7, fig.height=3.5, include = TRUE}
+
+################### Figure 3(a) ##################### 
+
+par(mfrow = c(1, 2))
+
+my.col <- c(j.red, j.blue)[question_1_plot$group_f]
+
+plot(mean ~ group, data = question_1_plot,
+     xlim = c(-0.5, 1.5), ylim = c(0.02, 0.27),
+     las = 1, xaxt = "n", yaxt = "n", axes = T, cex = 0, cex.axis = 1,
+     xlab = "", ylab = "",
+     pch = 15)
+
+
+axis(1, at = 0:1, c("", ""),
+     lwd = 0, lwd.ticks = 1, 
+     cex.axis=1, tck =-0.03)
+
+axis(side = 2,
+     at = c(0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("5","10", "15", "20", "25"),
+     cex.axis=1.5, las=1, lwd=1, lwd.ticks = 1, family = "Times")
+
+segments(x0 = c(0.8, 0.7, 0.9, 1.2, 1.1, 1.3, 1,
+           -0.2, -0.3, -0.1, 0, 0.2, 0.1, 0.3),
+         x1 = c(0.8, 0.7, 0.9, 1.2, 1.1, 1.3, 1,
+           -0.2, -0.3, -0.1, 0, 0.2, 0.1, 0.3),
+         y0 = c(max(Na_in_Control$mean_growth),
+                max(Cu_in_Control$mean_growth),
+                max(Temp_in_Control$mean_growth),
+                max(NaCu_in_Control$mean_growth),
+                max(NaTemp_in_Control$mean_growth),
+                max(CuTemp_in_Control$mean_growth),
+                max(All_in_Control$mean_growth),
+                max(Na_in_Na$mean_growth),
+                max(Cu_in_Cu$mean_growth),
+                max(Temp_in_Temp$mean_growth),
+                max(NaCu_in_NaCu$mean_growth),
+                max(NaTemp_in_NaTemp$mean_growth),
+                max(CuTemp_in_CuTemp$mean_growth),
+                max(All_in_All$mean_growth)),
+         y1 = c(min(Na_in_Control$mean_growth),
+                min(Cu_in_Control$mean_growth),
+                min(Temp_in_Control$mean_growth),
+                min(NaCu_in_Control$mean_growth),
+                min(NaTemp_in_Control$mean_growth),
+                min(CuTemp_in_Control$mean_growth),
+                min(All_in_Control$mean_growth),
+                min(Na_in_Na$mean_growth),
+                min(Cu_in_Cu$mean_growth),
+                min(Temp_in_Temp$mean_growth),
+                min(NaCu_in_NaCu$mean_growth),
+                min(NaTemp_in_NaTemp$mean_growth),
+                min(CuTemp_in_CuTemp$mean_growth),
+                min(All_in_All$mean_growth)),
+         lwd = 0.75, 
+         col = c(j.blue_alpha, j.blue_alpha, j.blue_alpha,
+                 j.blue_alpha, j.blue_alpha, j.blue_alpha,
+                 j.blue_alpha, j.red_alpha, j.red_alpha,
+                 j.red_alpha, j.red_alpha, j.red_alpha,
+                 j.red_alpha, j.red_alpha))
+
+arrows( x0 = question_1_plot$group, 
+        x1 = question_1_plot$group, 
+        y0 = question_1_plot$mean - question_1_plot$se, 
+        y1 = question_1_plot$mean + question_1_plot$se,
+        col = my.col,
+        code = 3, length = 0.07, angle = 90, lwd = 2)
+
+segments(y0 = c(question_1_plot$mean[1], 
+                question_1_plot$mean[2], 
+                question_1_plot$mean[3],
+                question_1_plot$mean[4], 
+                question_1_plot$mean[5], 
+                question_1_plot$mean[6],
+                question_1_plot$mean[7]),
+         y1 = c(question_1_plot$mean[8], 
+                question_1_plot$mean[9], 
+                question_1_plot$mean[10],
+                question_1_plot$mean[11], 
+                question_1_plot$mean[12], 
+                question_1_plot$mean[13],
+                question_1_plot$mean[14]),
+         x0 = c(question_1_plot$group[1], 
+                question_1_plot$group[2], 
+                question_1_plot$group[3],
+                question_1_plot$group[4], 
+                question_1_plot$group[5], 
+                question_1_plot$group[6],
+                question_1_plot$group[7]),
+         x1 = c(question_1_plot$group[8], 
+                question_1_plot$group[9], 
+                question_1_plot$group[10],
+                question_1_plot$group[11], 
+                question_1_plot$group[12], 
+                question_1_plot$group[13],
+                question_1_plot$group[14]),
+         lwd = 2, lty = 3, col = rgb(0, 0, 0, alpha = 0.5))
+
+points(mean ~ group, data = question_1_plot,
+       pch = 21, col = my.col, cex = 4.5, bg = my.col)
+
+text(mean ~ group, data = question_1_plot,
+     labels=question_1_plot$evolline_1, family = "Times", cex = 0.95, 
+     col = rgb(0.4, 0.4, 0.4))
+
+
+points(x = c(-0.2, -0.2, -0.2, -0.2),
+       y = Na_in_Na$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.red_alpha, pch = 21, cex = 0.75)
+
+points(x = c(-0.3, -0.3, -0.3),
+       y = Cu_in_Cu$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.red_alpha, pch = 21, cex = 0.75)
+
+points(x = c(-0.1, -0.1, -0.1, -0.1),
+       y = Temp_in_Temp$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.red_alpha, pch = 21, cex = 0.75)
+
+points(x = c(0, 0, 0),
+       y = NaCu_in_NaCu$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.red_alpha, pch = 21, cex = 0.75)
+
+points(x = c(0.2, 0.2, 0.2),
+       y = NaTemp_in_NaTemp$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.red_alpha, pch = 21, cex = 0.75)
+
+points(x = c(0.1, 0.1, 0.1, 0.1),
+       y = CuTemp_in_CuTemp$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.red_alpha, pch = 21, cex = 0.75)
+
+points(x = c(0.3, 0.3, 0.3, 0.3),
+       y = All_in_All$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.red_alpha, pch = 21, cex = 0.75)
+
+points(x = c(0.8, 0.8, 0.8, 0.8),
+       y = Na_in_Control$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.blue_alpha, pch = 21, cex = 0.75)
+
+points(x = c(0.7, 0.7, 0.7),
+       y = Cu_in_Control$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.blue_alpha, pch = 21, cex = 0.75)
+
+points(x = c(0.9, 0.9, 0.9, 0.9),
+       y = Temp_in_Control$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.blue_alpha, pch = 21, cex = 0.75)
+
+points(x = c(1.2, 1.2, 1.2),
+       y = NaCu_in_Control$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.blue_alpha, pch = 21, cex = 0.75)
+
+points(x = c(1.1, 1.1, 1.1),
+       y = NaTemp_in_Control$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.blue_alpha, pch = 21, cex = 0.75)
+
+points(x = c(1.3, 1.3, 1.3, 1.3),
+       y = CuTemp_in_Control$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.blue_alpha, pch = 21, cex = 0.75)
+
+points(x = c(1, 1, 1, 1),
+       y = All_in_Control$mean_growth,
+       col = rgb(0, 0, 0, 0.15), bg = j.blue_alpha, pch = 21, cex = 0.75)
+
+group <- c(0.8, 0.7, 0.9, 1.2, 1.1, 1.3, 1,
+           -0.2, -0.3, -0.1, 0, 0.2, 0.1, 0.3)
+
+################### Figure 3(b) ##################### 
+
+
+## To make the arrows more visible 
+j.red_alpha <- rgb(245/255, 159/255, 148/255, alpha = 0.6)
+j.blue_alpha <- rgb(195/255, 214/255, 245/255, alpha = 0.6)
+
+
+## Run this until you're happy with the jitter - then comment the next line
+figure_3b$environment_j <- jitter(figure_3b$environment_n, 0.5)
+
+plot(mean_growth ~ environment_j, data = figure_3b,
+     xlim = c(0.35, 4.65), ylim = c(-0.034, 0.236),
+     las = 1, xaxt = "n", yaxt = "n", axes = T, cex = 1.5,
+     xlab = "", ylab = "",
+     pch = 19, col = c(j.blue_alpha, j.blue_alpha, j.blue_alpha, j.red_alpha))
+
+#arrows( x0 = figure_3b$environment_j, 
+#        x1 = figure_3b$environment_j, 
+#        y0 = figure_3b$mean_growth - figure_3b$se_growth, 
+#        y1 = figure_3b$mean_growth + figure_3b$se_growth,
+#        col = c(j.blue_alpha, j.blue_alpha, j.blue_alpha, j.red_alpha),
+#        code = 3, length = 0.07, angle = 90, lwd = 1)
+
+axis(1, at = c(1.15, 2.15, 3.15, 4.15), c("", "", "", ""),
+     lwd = 0, lwd.ticks = 1, 
+     cex.axis=1, tck =-0.03)
+
+axis(side = 2,
+     at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25), 
+     labels = c("0", "5", "10", "15", "20", "25"), family = "Times", 
+     cex.axis=1.5, las=1, lwd=1, lwd.ticks = 1)
+
+points(x = c(1.3, 2.3, 3.3, 4.3),
+       y = c(all_mean, nacu_mean, natemp_mean, cutemp_mean),
+       col = c(j.red, j.blue, j.blue, j.blue), pch = 19, cex = 4)
+
+arrows( x0 = c(1.3, 2.3, 3.3, 4.3),
+        x1 = c(1.3, 2.3, 3.3, 4.3),
+        y0 = c(all_mean+all_se, nacu_mean+nacu_se, 
+               natemp_mean+natemp_se, cutemp_mean+cutemp_se), 
+        y1 = c(all_mean-all_se, nacu_mean-nacu_se, 
+               natemp_mean-natemp_se, cutemp_mean-cutemp_se), 
+        col = c(j.red, j.blue, j.blue, j.blue),
+        code = 3, length = 0.07, angle = 90, lwd = 2)
+
+
+```
+
+
+
+
+
