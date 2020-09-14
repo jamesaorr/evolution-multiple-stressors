@@ -328,7 +328,7 @@ write.csv(growth_trend_data, "Data/Outputs/stressor_interactions.csv", row.names
 
 - **Analysis of trend** 
 
-```{r, echo=TRUE, results='hide'}
+```{r, echo=TRUE}
 # Assumption 1 - difference between groups is normally distributed
 # d <- growth_trend_data$effect1[treatment_F == "0"] - growth_trend_data$effect1[treatment_F == "1"]
 # shapiro.test(d) 
@@ -343,10 +343,11 @@ write.csv(growth_trend_data, "Data/Outputs/stressor_interactions.csv", row.names
 # two sided paired t-test 
 t.test(effect1 ~ treatment_F, equal.var = TRUE, paired=TRUE, data=growth_trend_data, alternative = "two.sided")
 
-mean(growth_trend_data$effect1[treatment_F==0])
-mean(growth_trend_data$effect1[treatment_F==1])
-sd(growth_trend_data$effect1[treatment_F==0])
-sd(growth_trend_data$effect1[treatment_F==1])
+# Means and SD 
+#mean(growth_trend_data$effect1[treatment_F==0])
+#mean(growth_trend_data$effect1[treatment_F==1])
+#sd(growth_trend_data$effect1[treatment_F==0])
+#sd(growth_trend_data$effect1[treatment_F==1])
 ```
 
 
@@ -395,7 +396,7 @@ question_1_no_all <- subset(question_1, treat_num != "64" & treat_num != "57")
 
 Pairs of populations are compared in the environment they evolved in and in the control environment. We do this analysis twice, once with all populations, and once excluding the populations evolved to all three stressors as these were a clear outlier. 
 
-```{r, echo=TRUE, results='hide'}
+```{r, echo=TRUE}
 
 # Assumption 1 - difference between groups is normally distributed
 #d <- question_2$mean_growth[question_2$evo_rem == "0"] - question_2$mean_growth[question_2$evo_rem == "1"]
@@ -443,7 +444,7 @@ question_2$environment_f <- factor(question_2$Environment,
 Tukey test carry out all pairwise combinations but we are only interested in how 5, 6, 7 and different to 8. So we apply the ‘many-to-one comparison procedure’ (Dunnett, 1955)
 
 
-```{r, echo=TRUE, results = 'hide'}
+```{r, echo=TRUE}
 
 one_aov <- aov(mean_growth ~ environment_f-1, data = question_2)
 summary(one_aov)
@@ -477,7 +478,7 @@ summary(dunn)
 ### Supplemental Analysis 
 
 - **Supplementary Figure 1, Scenario 2**
-```{r, echo=TRUE, results='hide'}
+```{r, echo=TRUE}
 
 ########## Temporal Variation in Stressor Interactions: SCENARIO 2 ############
 
@@ -493,10 +494,11 @@ summary(dunn)
 ## paired t-test 
 t.test(effect2 ~ treatment_F, equal.var = TRUE, paired=TRUE, data=growth_trend_data, alternative = "two.sided")
 
-mean(growth_trend_data$effect2[treatment_F==0])
-mean(growth_trend_data$effect2[treatment_F==1])
-sd(growth_trend_data$effect2[treatment_F==0])
-sd(growth_trend_data$effect2[treatment_F==1])
+# Means and SD 
+#mean(growth_trend_data$effect2[treatment_F==0])
+#mean(growth_trend_data$effect2[treatment_F==1])
+#sd(growth_trend_data$effect2[treatment_F==0])
+#sd(growth_trend_data$effect2[treatment_F==1])
 ```
 
 <br>
