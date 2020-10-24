@@ -8,10 +8,10 @@ output:
      toc: true
      toc_depth: 4
      number_sections: no
+     fig_caption: true
 ---
 
 ```{r, echo=FALSE, results='hide'}
-
 rm(list = ls())           # clear the environment 
 
 # Packages
@@ -21,9 +21,7 @@ library(multcomp)         # To use glht() for dunnet post hoc test
 
 # Functions to calculate hedges effect size for interactions between stressors
 source("Scripts/Hedges.Functions.R") 
-
 ```
-
 
 ### Intro
 
@@ -42,23 +40,24 @@ We are interested in the following questions:
 
 The raw data we are using is in *growth-data.csv* and the variables are: 
 
-- *assay*: "2", "3" - two growth assays (replication). Not enough levels to be set as a random effect and not significant. 
-- *Environment*: 1-8 - 8 different environments
-- *Population*: 1-32 - 4 replicates of each evolved line, missing three populations that went extinct: 11 (Cu), 19 (NaCu), and 24 (NaTemp). 
-- *evolline*: 1-8 - 8 evolved lines of rotifers. 
+- *assay*: "2", "3" - two growth assays (replication). Not enough levels to be set as a random effect and no significant difference between the two. 
+- *Environment*: 1-8 - 8 different environments (Con, Na, Cu, Temp, NaCu, NaTemp, CuTemp, All).
+- *Population*: 1-32 - 4 replicates of each evolved line, missing three populations that went extinct during the experiment: 11 (Cu), 19 (NaCu), and 24 (NaTemp). 
+- *evolline*: 1-8 - 8 evolved lines of rotifers (Con, Na, Cu, Temp, NaCu, NaTemp, CuTemp, All).
 - *Replicate*: 1-12 - there were ~12 replicates per combination.  
 - *Growth*: A measure of fitness. Growth rate (% per day)
 
 2x8x4x8x12 = 6144 observations - but due to the extinction of three populations and the fact that not all replicates worked we have a total of 5350 observations.
 
-There is pseudoreplication due to the nested data structure (replicates within populations) - a mixed effects modeling approach would work but finding a specific error distribution (GLMM approach) was quite challenging because growth has a bimodal distribution (some die, some grow). Instead, we carried out our analysis at the population level. The mean growth rate of populations becomes the response variable. This reduces our statistical power but allows us to carry out simple statistics that clearly explain our results.
+We carried out our analysis at the population level. The mean growth rate of populations is the response variable. This  allows us to carry out simple statistics that clearly explain our results and prevents any sort of pseudo-replication.
 
 <br>
 
 - **Import data and organise**
 
 ```{r, echo = TRUE}
-rot_data <- read.csv("Data/growth_data.csv", header = TRUE, 
+rot_data <- read.csv("Data/growth_data.csv", 
+                     header = TRUE, 
                      stringsAsFactors=FALSE)
 
 # create a vector representing interactions of evolline and environment
@@ -75,7 +74,7 @@ rot_data$treat_num <- as.numeric(rot_data$treat_fac)
 rot_data <- as_tibble(rot_data)
 ```
 
-- **Calculate means (and standard error) of populations and create new dataframe**
+- **Calculate means (and standard error) of populations and create new data frame**
 
 ```{r, echo = TRUE, results = 'hide'}
 # standard error function 
@@ -111,13 +110,16 @@ write.csv(rot_pop, "Data/Outputs/population_growth.csv", row.names=F)
 
 ```
 
-
 ### Part 1: Temporal Variation in Stressor Interactions
 
 Our first question is comparing the interactions between stressors for control (blue below) and evolved (red below) populations The numbered boxes 1-64 are encoded by the treat_num variable so we can use to pick out specific combinations of evolved line and environment. As there are three/four population replicates for each evolved line for each combination we have a sample size of 3 or 4 (the mean growth for each populations)
 
 <center>
-![64 combinations of evolved lines and environments](Images/growth_assay_table.png){#id .class width=40% height=40%}
+![](Images/growth_assay_table.png){#id .class width=40% height=40%}
+
+*64 combinations of evolved lines and environments.* 
+
+*Numbers in each box correspond to the numbers of of treat_num.*
 </center>
 
 <br>
@@ -152,8 +154,7 @@ Control_in_All <- subset(rot_pop, treat_num == "8")
 - **Calculate Hedges effect sizes and confidence intervals** 
 
 ```{r, echo=TRUE}
-
-## The user-defined functions (hedges.2, hedges.3) are from the scripts folder
+## The user-defined functions (hedges.2, hedges.3)  from the scripts folder
 
 ############################## Control ###################################
 
@@ -266,15 +267,11 @@ list[IE_all_on_E_II,
                                    Control_in_Cu$mean_growth, 
                                    Control_in_Temp$mean_growth, 
                                    All_in_All$mean_growth)
-
 ```
-
 
 - **Set up dataframe for analysis of trend** 
 
-
 ```{r, echo=TRUE, results='hide'}
-
 # make a dataframe for analysis and plotting 
 
 stressors <- c("NaCu", "NaTemp", "CuTemp", "All",
@@ -318,11 +315,12 @@ growth_trend_data <- tibble(stressors, treatment, treatment_J, treatment_F,
 
 # convert to factor 
 growth_trend_data$stressors <- factor(growth_trend_data$stressors, 
-                                   levels = c("NaCu", "NaTemp", "CuTemp", "All"))
+                                   levels = c("NaCu", "NaTemp", 
+                                              "CuTemp", "All"))
 
 # export this dataframe to use for creating figures 
-write.csv(growth_trend_data, "Data/Outputs/stressor_interactions.csv", row.names=F)
-
+write.csv(growth_trend_data, "Data/Outputs/stressor_interactions.csv", 
+          row.names=F)
 ```
 
 
@@ -341,7 +339,8 @@ write.csv(growth_trend_data, "Data/Outputs/stressor_interactions.csv", row.names
 
 
 # two sided paired t-test 
-t.test(effect1 ~ treatment_F, equal.var = TRUE, paired=TRUE, data=growth_trend_data, alternative = "two.sided")
+t.test(effect1 ~ treatment_F, equal.var = TRUE, paired=TRUE, 
+       data=growth_trend_data, alternative = "two.sided")
 
 # Means and SD 
 #mean(growth_trend_data$effect1[treatment_F==0])
@@ -388,7 +387,6 @@ question_1$evolline <- factor(question_1$evolline)
 
 # excluding the all evolved line (an outlier)
 question_1_no_all <- subset(question_1, treat_num != "64" & treat_num != "57")
-
 ```
 
 
@@ -397,7 +395,6 @@ question_1_no_all <- subset(question_1, treat_num != "64" & treat_num != "57")
 Pairs of populations are compared in the environment they evolved in and in the control environment. We do this analysis twice, once with all populations, and once excluding the populations evolved to all three stressors as these were a clear outlier. 
 
 ```{r, echo=TRUE}
-
 # Assumption 1 - difference between groups is normally distributed
 #d <- question_2$mean_growth[question_2$evo_rem == "0"] - question_2$mean_growth[question_2$evo_rem == "1"]
 #shapiro.test(d) 
@@ -413,11 +410,9 @@ t.test(mean_growth ~ evo_rem, equal.var = TRUE, paired=T,
        data=question_1, alternative = "two.sided")
 t.test(mean_growth ~ evo_rem, equal.var = TRUE, paired=T, 
        data=question_1_no_all, alternative = "two.sided")
-
 ```
 
 <br>
-
 
 #### Question 2
 
@@ -428,7 +423,6 @@ Does it matter which stressor is removed from a population that has evolved to m
 - **Extract the relevant data and organise**
 
 ```{r, echo=TRUE}
-
 question_2 <- rot_pop %>% filter(treat_num == 61 | 
                                    treat_num == 62 | 
                                    treat_num == 63 | 
@@ -443,9 +437,7 @@ question_2$environment_f <- factor(question_2$Environment,
 
 Tukey test carry out all pairwise combinations but we are only interested in how 5, 6, 7 and different to 8. So we apply the ‘many-to-one comparison procedure’ (Dunnett, 1955)
 
-
 ```{r, echo=TRUE}
-
 one_aov <- aov(mean_growth ~ environment_f-1, data = question_2)
 summary(one_aov)
 #TukeyHSD(one_aov)
@@ -468,9 +460,7 @@ summary(dunn)
 
 #leveneTest(mean_growth ~ environment_f-1, data = question_2) 
 # null hyptothesis, of equal variance, is not rejected 
-
 ```
-
 
 <br>
 <br>
@@ -479,7 +469,6 @@ summary(dunn)
 
 - **Supplementary Figure 1, Scenario 2**
 ```{r, echo=TRUE}
-
 ########## Temporal Variation in Stressor Interactions: SCENARIO 2 ############
 
 # Assumption 1 - difference between groups is normally distributed
@@ -492,7 +481,8 @@ summary(dunn)
 # null hypothesis, that they have equal variance, is not rejected 
 
 ## paired t-test 
-t.test(effect2 ~ treatment_F, equal.var = TRUE, paired=TRUE, data=growth_trend_data, alternative = "two.sided")
+t.test(effect2 ~ treatment_F, equal.var = TRUE, paired=TRUE, 
+       data=growth_trend_data, alternative = "two.sided")
 
 # Means and SD 
 #mean(growth_trend_data$effect2[treatment_F==0])
