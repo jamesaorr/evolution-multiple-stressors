@@ -1,0 +1,1004 @@
+---
+title: "Evolution-Multiple-Stressors: Supplementary Videos"
+author: "James Orr"
+output:
+   html_notebook:
+     code_folding: hide
+     theme: flatly
+     toc: true
+     toc_depth: 4
+     number_sections: no
+---
+
+```{r, echo=FALSE, results='hide'}
+# R version 4.0.2 (2020-06-22)
+
+rm(list = ls())           # clear the environment 
+
+# Packages
+library(tidyverse)        # Organising and manipulating data
+library(gsubfn)           # To use list[]
+library(plotrix)          # To use enhance list[] functionality
+library(latex2exp)        # To use Tex in figures
+
+# Packages to make the Gif
+library(plot3Drgl)        # For interactive 3D plots - XQuartz required (macs)
+library(magick)           # For exporting gifs 
+```
+
+
+### Intro
+
+This R notebook contains the code used to create the supplementary videos for the paper: *"Rapid evolution generates synergism between multiple stressors: linking theory and an evolution experiment"*. 
+
+We use data and dataframes generated in the `Rotifer-Stressor-Analysis` notebook. 
+
+<br>
+
+- **Import data and organise**
+
+```{r, echo=TRUE, results='hide'}
+rot_pop <- read.csv("Data/Outputs/population_growth.csv", header = TRUE, 
+                     stringsAsFactors=FALSE)
+
+rot_pop <- rot_pop %>%
+  mutate(label = case_when(
+    evolline == 1 ~ "Con",
+    evolline == 2 ~ "S",
+    evolline == 3 ~ "C",
+    evolline == 4 ~ "T",
+    evolline == 5 ~ "SC",
+    evolline == 6 ~ "ST",
+    evolline == 7 ~ "CT",
+    evolline == 8 ~ "SCT"))
+
+growth_trend_data <- read.csv("Data/Outputs/stressor_interactions.csv", 
+                                  header = TRUE, stringsAsFactors = FALSE)
+growth_trend_data$treatment_F <- as.factor(growth_trend_data$treatment_F)
+
+
+## Colour scheme ## 
+j.red <- rgb(245/255, 159/255, 148/255)
+j.blue <- rgb(195/255, 214/255, 245/255)
+j.red_alpha <- rgb(245/255, 159/255, 148/255, alpha = 0.65)
+j.blue_alpha <- rgb(195/255, 214/255, 245/255, alpha = 0.65)
+```
+
+- **Make logical subsets**
+
+```{r, echo=TRUE}
+###### Evolved Population Growth Rates #######
+Na_in_Na <- subset(rot_pop, treat_num == "10")
+Cu_in_Cu <- subset(rot_pop, treat_num == "19")
+Temp_in_Temp <- subset(rot_pop, treat_num == "28")
+NaCu_in_NaCu <- subset(rot_pop, treat_num == "37")
+NaTemp_in_NaTemp <- subset(rot_pop, treat_num == "46")
+CuTemp_in_CuTemp <- subset(rot_pop, treat_num == "55")
+All_in_All <- subset(rot_pop, treat_num == "64")
+
+####### Non-Evolved Population Growth Rate ########
+Control_in_Control <- subset(rot_pop, treat_num == "1")
+Control_in_Na <- subset(rot_pop, treat_num == "2")
+Control_in_Cu <- subset(rot_pop, treat_num == "3")
+Control_in_Temp <- subset(rot_pop, treat_num == "4")
+Control_in_NaCu <- subset(rot_pop, treat_num == "5")
+Control_in_NaTemp <- subset(rot_pop, treat_num == "6")
+Control_in_CuTemp <- subset(rot_pop, treat_num == "7")
+Control_in_All <- subset(rot_pop, treat_num == "8")
+
+#### For Performance Space Plots ####
+NaCu_in_Na <- subset(rot_pop, treat_num == "34")
+NaCu_in_Cu <- subset(rot_pop, treat_num == "35")
+NaCu_in_Temp <- subset(rot_pop, treat_num == "36")
+NaTemp_in_Na <- subset(rot_pop, treat_num == "42")
+NaTemp_in_Cu <- subset(rot_pop, treat_num == "43")
+NaTemp_in_Temp <- subset(rot_pop, treat_num == "44")
+CuTemp_in_Na <- subset(rot_pop, treat_num == "50")
+CuTemp_in_Cu <- subset(rot_pop, treat_num == "51")
+CuTemp_in_Temp <- subset(rot_pop, treat_num == "52")
+All_in_Na <- subset(rot_pop, treat_num == "58")
+All_in_Cu <- subset(rot_pop, treat_num == "59")
+All_in_Temp <- subset(rot_pop, treat_num == "60")
+Na_in_Cu <- subset(rot_pop, treat_num == "11")
+Cu_in_Na <- subset(rot_pop, treat_num == "18")
+Na_in_Temp <- subset(rot_pop, treat_num == "12")
+Temp_in_Na <- subset(rot_pop, treat_num == "26")
+Cu_in_Temp <- subset(rot_pop, treat_num == "20")
+Temp_in_Cu <- subset(rot_pop, treat_num == "27")
+
+#### For Removal of Stressors #####
+Na_in_Control <- subset(rot_pop, treat_num == "9")
+Cu_in_Control <- subset(rot_pop, treat_num == "17")
+Temp_in_Control <- subset(rot_pop, treat_num == "25")
+NaCu_in_Control <- subset(rot_pop, treat_num == "33")
+NaTemp_in_Control <- subset(rot_pop, treat_num == "41")
+CuTemp_in_Control <- subset(rot_pop, treat_num == "49")
+All_in_Control <- subset(rot_pop, treat_num == "57")
+All_in_NaCu <- subset(rot_pop, treat_num == "61")
+All_in_NaTemp <- subset(rot_pop, treat_num == "62")
+All_in_CuTemp <- subset(rot_pop, treat_num == "63")
+```
+
+- **Calculate required summary statistics**
+
+```{r, echo=TRUE}
+## Some functions to speed things up ##
+
+std.error <- function(x){ 
+  return( sqrt( var(x) / length(x) ) ) 
+  }
+
+statistics <- function(x, Con){
+  n <- length(x)
+  m <- mean(x)
+  se <- std.error(x)
+  sd <- sd(x)
+  mcon <- mean(Con)
+  sdcon <- sd(Con)
+  ncon <- length(Con)
+  raw_e <- mcon - m
+  raw_v <- (sdcon^2 / ncon) + (sd^2 / n)
+  raw_se <- sqrt(raw_v)
+  return(c(m, se, raw_e, raw_se))
+  }
+
+######################## Evolved ########################
+
+list[mgrowth_Na_in_Na, segrowth_Na_in_Na, rawD_na_on_e, rawSE_na_on_e] <- 
+  statistics(Na_in_Na$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Cu_in_Cu, segrowth_Cu_in_Cu, rawD_cu_on_e, rawSE_cu_on_e] <- 
+  statistics(Cu_in_Cu$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Temp_in_Temp, segrowth_Temp_in_Temp, rawD_temp_on_e, 
+     rawSE_temp_on_e] <- 
+  statistics(Temp_in_Temp$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_NaCu_in_NaCu, segrowth_NaCu_in_NaCu, rawD_nacu_on_e, 
+     rawSE_nacu_on_e] <- 
+  statistics(NaCu_in_NaCu$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_NaTemp_in_NaTemp, segrowth_NaTemp_in_NaTemp, rawD_natemp_on_e, 
+     rawSE_natemp_on_e] <- 
+  statistics(NaTemp_in_NaTemp$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_CuTemp_in_CuTemp, segrowth_CuTemp_in_CuTemp, rawD_cutemp_on_e, 
+     rawSE_cutemp_on_e] <- 
+  statistics(CuTemp_in_CuTemp$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_All_in_All, segrowth_All_in_All, rawD_all_on_e, rawSE_all_on_e] <- 
+  statistics(All_in_All$mean_growth, Control_in_Control$mean_growth)
+
+
+######################## Control ########################
+
+mgrowth_Control_in_Control <- mean(Control_in_Control$mean_growth)
+segrowth_Control_in_Control <- std.error(Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_Na, segrowth_Control_in_Na, rawD_na_on_c, 
+     rawSE_na_on_c] <- 
+  statistics(Control_in_Na$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_Cu, segrowth_Control_in_Cu, rawD_cu_on_c, 
+     rawSE_cu_on_c] <- 
+  statistics(Control_in_Cu$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_Temp, segrowth_Control_in_Temp, rawD_temp_on_c, 
+     rawSE_temp_on_c] <- 
+  statistics(Control_in_Temp$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_NaCu, segrowth_Control_in_NaCu, rawD_nacu_on_c, 
+     rawSE_nacu_on_c] <- 
+  statistics(Control_in_NaCu$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_NaTemp, segrowth_Control_in_NaTemp, rawD_natemp_on_c, 
+     rawSE_natemp_on_c] <- 
+  statistics(Control_in_NaTemp$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_CuTemp, segrowth_Control_in_CuTemp, rawD_cutemp_on_c, 
+     rawSE_cutemp_on_c] <- 
+  statistics(Control_in_CuTemp$mean_growth, Control_in_Control$mean_growth)
+
+list[mgrowth_Control_in_All, segrowth_Control_in_All, rawD_all_on_c, 
+     rawSE_all_on_c] <- 
+  statistics(Control_in_All$mean_growth, Control_in_Control$mean_growth)
+```
+
+- **Calculate distances and coordinates** 
+
+```{r, echo=TRUE}
+coord <- function(x){
+  return(x/2)
+}
+
+###### Realised #######
+coord_nacu_con <- coord(rawD_nacu_on_c)
+coord_natemp_con <- coord(rawD_natemp_on_c)
+coord_cutemp_con <- coord(rawD_cutemp_on_c)
+coord_all_con <- coord(rawD_all_on_c)
+coord_nacu_evo <- coord(rawD_nacu_on_e)
+coord_natemp_evo <- coord(rawD_natemp_on_e)
+coord_cutemp_evo <- coord(rawD_cutemp_on_e)
+coord_all_evo<- coord(rawD_all_on_e)
+###### Additive #######
+coord_nacu_add_con <- coord(rawD_na_on_c+rawD_cu_on_c)
+coord_natemp_add_con <- coord(rawD_na_on_c+rawD_temp_on_c)
+coord_cutemp_add_con <- coord(rawD_cu_on_c+rawD_temp_on_c)
+coord_all_add_con <- coord(rawD_na_on_c+rawD_cu_on_c+rawD_temp_on_c)
+coord_nacu_add_evo <- coord(rawD_na_on_e+(rawD_cu_on_e))
+coord_natemp_add_evo <- coord(rawD_na_on_e+rawD_temp_on_e)
+coord_cutemp_add_evo <- coord(rawD_temp_on_e+(rawD_cu_on_e))
+coord_all_add_evo<- coord(rawD_na_on_e+rawD_temp_on_e+(rawD_cu_on_e))
+###### Error Bars ######
+plus_nacu_con <- coord(rawD_nacu_on_c+rawSE_nacu_on_c)
+plus_natemp_con <- coord(rawD_natemp_on_c+rawSE_natemp_on_c)
+plus_cutemp_con <- coord(rawD_cutemp_on_c+rawSE_cutemp_on_c)
+plus_nacu_evo <- coord(rawD_nacu_on_e+rawSE_nacu_on_e)
+plus_natemp_evo <- coord(rawD_natemp_on_e+rawSE_natemp_on_e)
+plus_cutemp_evo <- coord(rawD_cutemp_on_e+rawSE_cutemp_on_e)
+min_nacu_con <- coord(rawD_nacu_on_c-rawSE_nacu_on_c)
+min_natemp_con <- coord(rawD_natemp_on_c-rawSE_natemp_on_c)
+min_cutemp_con <- coord(rawD_cutemp_on_c-rawSE_cutemp_on_c)
+min_nacu_evo <- coord(rawD_nacu_on_e-rawSE_nacu_on_e)
+min_natemp_evo <- coord(rawD_natemp_on_e-rawSE_natemp_on_e)
+min_cutemp_evo <- coord(rawD_cutemp_on_e-rawSE_cutemp_on_e)
+
+###### population coords ########
+coord_nacu_con_pop <- coord(mgrowth_Control_in_Control-
+                                   Control_in_NaCu$mean_growth)
+coord_natemp_con_pop <-coord(mgrowth_Control_in_Control-
+                                    Control_in_NaTemp$mean_growth)
+coord_cutemp_con_pop <-coord(mgrowth_Control_in_Control-
+                                    Control_in_CuTemp$mean_growth)
+coord_all_con_pop <- coord(mgrowth_Control_in_Control-
+                                  Control_in_All$mean_growth)
+coord_nacu_evo_pop <- coord(mgrowth_Control_in_Control-
+                                   NaCu_in_NaCu$mean_growth)
+coord_natemp_evo_pop <- coord(mgrowth_Control_in_Control-
+                                     NaTemp_in_NaTemp$mean_growth)
+coord_cutemp_evo_pop <- coord(mgrowth_Control_in_Control-
+                                     CuTemp_in_CuTemp$mean_growth)
+coord_all_evo_pop <- coord(mgrowth_Control_in_Control-
+                                  All_in_All$mean_growth)
+
+#### additive expectation for 3D video #####
+coord_all_con_add <- coord(rawD_na_on_c+rawD_cu_on_c+rawD_temp_on_c)
+coord_all_evo_add <- coord(rawD_na_on_e+rawD_cu_on_e+rawD_temp_on_e)
+```
+
+- **means of populations**
+
+```{r, echo=TRUE}
+### gathering mean data points 
+mgrowth_NaCu_in_Na <- mean(NaCu_in_Na$mean_growth)
+mgrowth_NaCu_in_Cu <- mean(NaCu_in_Cu$mean_growth)
+mgrowth_NaTemp_in_Na <- mean(NaTemp_in_Na$mean_growth)
+mgrowth_NaTemp_in_Temp <- mean(NaTemp_in_Temp$mean_growth)
+mgrowth_CuTemp_in_Cu <- mean(CuTemp_in_Cu$mean_growth)
+mgrowth_CuTemp_in_Temp <- mean(CuTemp_in_Temp$mean_growth)
+mgrowth_All_in_Na <- mean(All_in_Na$mean_growth)
+mgrowth_All_in_Cu <- mean(All_in_Cu$mean_growth)
+mgrowth_All_in_Temp <- mean(All_in_Temp$mean_growth)
+mgrowth_Na_in_Control <- mean(Na_in_Control$mean_growth)
+mgrowth_Cu_in_Control <- mean(Cu_in_Control$mean_growth)
+mgrowth_Temp_in_Control <- mean(Temp_in_Control$mean_growth)
+mgrowth_All_in_NaCu <- mean(All_in_NaCu$mean_growth)
+mgrowth_All_in_NaTemp <- mean(All_in_NaTemp$mean_growth)
+mgrowth_All_in_CuTemp <- mean(All_in_CuTemp$mean_growth)
+mgrowth_NaCu_in_Control <- mean(NaCu_in_Control$mean_growth)
+mgrowth_NaTemp_in_Control <- mean(NaTemp_in_Control$mean_growth)
+mgrowth_CuTemp_in_Control <- mean(CuTemp_in_Control$mean_growth)
+```
+
+
+- **Calculate adaptations** 
+
+```{r, echo=TRUE}
+#### NA ####
+ad_na_to_na <- Na_in_Na$mean_growth - mgrowth_Control_in_Na
+ad_na_to_cu <- Na_in_Cu$mean_growth - mgrowth_Control_in_Cu
+ad_na_to_temp <- Na_in_Temp$mean_growth - mgrowth_Control_in_Temp
+
+#### CU ####
+ad_cu_to_na <- Cu_in_Na$mean_growth - mgrowth_Control_in_Na
+ad_cu_to_cu <- Cu_in_Cu$mean_growth - mgrowth_Control_in_Cu
+ad_cu_to_temp <- Cu_in_Temp$mean_growth - mgrowth_Control_in_Temp 
+
+#### TEMP ####
+ad_temp_to_na <- Temp_in_Na$mean_growth - mgrowth_Control_in_Na
+ad_temp_to_cu <- Temp_in_Cu$mean_growth - mgrowth_Control_in_Cu
+ad_temp_to_temp <- Temp_in_Temp$mean_growth - mgrowth_Control_in_Temp 
+
+#### NACU ####
+ad_nacu_to_na <- NaCu_in_Na$mean_growth - mgrowth_Control_in_Na
+ad_nacu_to_cu <- NaCu_in_Cu$mean_growth - mgrowth_Control_in_Cu
+ad_nacu_to_temp <- NaCu_in_Temp$mean_growth - mgrowth_Control_in_Temp 
+
+#### NATEMP ####
+ad_natemp_to_na <- NaTemp_in_Na$mean_growth - mgrowth_Control_in_Na
+ad_natemp_to_cu <- NaTemp_in_Cu$mean_growth - mgrowth_Control_in_Cu
+ad_natemp_to_temp <- NaTemp_in_Temp$mean_growth - mgrowth_Control_in_Temp 
+
+#### CUTEMP ####
+ad_cutemp_to_na <- CuTemp_in_Na$mean_growth - mgrowth_Control_in_Na
+ad_cutemp_to_cu <- CuTemp_in_Cu$mean_growth - mgrowth_Control_in_Cu
+ad_cutemp_to_temp <- CuTemp_in_Temp$mean_growth - mgrowth_Control_in_Temp 
+
+#### ALL ####
+ad_all_to_na <- All_in_Na$mean_growth - mgrowth_Control_in_Na
+ad_all_to_cu <- All_in_Cu$mean_growth - mgrowth_Control_in_Cu
+ad_all_to_temp <- All_in_Temp$mean_growth - mgrowth_Control_in_Temp 
+```
+
+- **Calculate removal effect** 
+
+```{r, echo=TRUE}
+# See supplementary note for an explanation of why this step is required 
+# The growth rate of NaCu in Cu contains the ad_nacu_to_cu 
+# But it also contains the removal effect (i.e. maladaptation) of removing na 
+# We don't have access to this information directly 
+# So we make approximations based on the information we do have 
+
+### Effect of removing a stressor
+Na_removed <- mgrowth_Na_in_Control-mgrowth_Control_in_Control
+Cu_removed <- mgrowth_Cu_in_Control-mgrowth_Control_in_Control
+Temp_removed <- mgrowth_Temp_in_Control-mgrowth_Control_in_Control
+
+### For the different evolved lines  
+NaCu_Na_removed <- Na_removed
+NaCu_Cu_removed <- Cu_removed
+NaTemp_Na_removed <- Na_removed
+NaTemp_Temp_removed <- Temp_removed
+CuTemp_Cu_removed <- Cu_removed
+CuTemp_Temp_removed <- Temp_removed
+
+######### Special case of three stressors ###########
+# Using information about double evolved lines in their own environment
+# Explanation in supplementary note:  all_performance = 0.5*Adj*colvec
+# all_performance is what we want (performance space coordinates)
+# col_vec is what we know (adaptation of abc to ab/ac/bc) and removal of a/b/c
+# Adj = adjoint matrix, details in supplementary note 
+
+# Defining colvec
+colvec_1 <- (mgrowth_All_in_NaCu-mgrowth_Control_in_NaCu)-Temp_removed
+colvec_2 <- (mgrowth_All_in_NaTemp-mgrowth_Control_in_NaTemp)-Cu_removed
+colvec_3 <- (mgrowth_All_in_CuTemp-mgrowth_Control_in_CuTemp)-Na_removed
+colvec <- c(colvec_1, colvec_2, colvec_3)
+
+# Definig Adj
+Adj <- matrix(c(1, 1, -1, 1, -1, 1, -1, 1, 1), nrow=3)
+
+# Calculating perfomrnace space coordinates
+all_performance <- 0.5*Adj%*%colvec      #   %*% is matrix multiplication
+
+# Calculate the removal effect (to be consistent with older code)
+All_CuTemp_removed <- mean(ad_all_to_na)- all_performance[1]
+All_NaTemp_removed <- mean(ad_all_to_cu) - all_performance[2]
+All_NaCu_removed <- mean(ad_all_to_temp) - all_performance[3]
+
+# Extra information required for 3d plots
+NaCu_NaCu_removed <- Na_removed + Cu_removed
+NaTemp_NaTemp_removed <- Na_removed + Temp_removed
+CuTemp_CuTemp_removed <- Cu_removed + Temp_removed
+```
+
+<br>
+
+### Suplementary Video 1 - All Stressors (4 axes)
+
+Resources: 
+
+- http://www.sthda.com/english/wiki/impressive-package-for-3d-and-4d-graph-r-software-and-data-visualization 
+- https://www.r-graph-gallery.com/3-r-animated-cube.html 
+
+
+```{r, echo=FALSE}
+x.coords = c(rawD_na_on_c, 0, 0, rawD_na_on_e, 0, 0)
+y.coords = c(0, rawD_cu_on_c, 0, 0, rawD_cu_on_e, 0)
+z.coords = c(0, 0, rawD_temp_on_c, 0, 0, rawD_temp_on_e)
+
+x.coords_2 = x.coords+0.0055
+y.coords_2 = y.coords+0.0055
+z.coords_2 = z.coords+0.0055
+
+########### Points ###########
+
+scatter3D(x = x.coords, y = y.coords, z = z.coords,
+          colvar = NULL, 
+          col = c(j.blue, j.blue, j.blue, 
+                  j.red, j.red, j.red),
+          pch = 19, 
+          cex = 3.5,
+          xlim = c(-0.025, 0.19),
+          ylim = c(-0.025, 0.19),
+          zlim = c(-0.025, 0.19),
+          box=FALSE,
+          xlab = "Effect of Salt",
+          ylab = "Effect of Copper",
+          zlab = "Effect of Temperature",
+          ticktype = "detailed")
+
+
+scatter3D(x = c(coord_all_con, coord_all_evo, 
+                coord_all_con_add, coord_all_evo_add),
+          y = c(coord_all_con, coord_all_evo, 
+                coord_all_con_add, coord_all_evo_add),
+          z = c(coord_all_con, coord_all_evo, 
+                coord_all_con_add, coord_all_evo_add),
+          add = TRUE, 
+          pch = 19, 
+          cex = 3.5,
+          col = c(j.blue, j.red, 
+                  rgb(230/255, 240/255, 255/255), rgb(1, 0.9, 0.9)),
+          colvar = NULL)
+
+
+scatter3D(0, 0, 0,
+          add = TRUE,
+          pch = 8, 
+          cex = 1, 
+          col = rgb(0.25, 0.25, 0.25, alpha = 0.7))
+
+
+########### Axis ############
+
+
+segments3D(x0 = c(-0.02, 0, 0, -0.02),
+        x1 = c(0.19, 0, 0, 0.19),
+        y0 = c(0, -0.02, 0, -0.02),
+        y1 = c(0, 0.19, 0, 0.19),
+        z0 = c(0, 0, -0.02, -0.02),
+        z1 = c(0, 0, 0.19, 0.19),
+        add = TRUE)
+
+
+############ Text ##############
+
+text3D(x = c(coord_all_con+0.0065, coord_all_evo+0.0065, 
+             coord_all_con_add+0.0055, coord_all_evo_add+0.0055),
+       y = c(coord_all_con+0.0065, coord_all_evo+0.0065, 
+             coord_all_con_add+0.0055, coord_all_evo_add+0.0055),
+       z = c(coord_all_con+0.0065, coord_all_evo+0.0065, 
+             coord_all_con_add+0.0055, coord_all_evo_add+0.0055),
+       labels = c("SCT", "SCT'", "+", "+'"),
+       add = TRUE, 
+       colkey = FALSE, 
+       cex = 1)
+
+text3D(x = x.coords_2, y = y.coords_2, z = z.coords_2,
+       labels = c("S", "C", "T", "S'", "C'", "T'"),
+       add = TRUE, 
+       colkey = FALSE, 
+       cex = 1)
+
+text3D(x = c(coord_all_con+0.01, coord_all_evo+0.01),
+       y = c(coord_all_con, coord_all_evo), 
+       z = c(coord_all_con-0.01, coord_all_evo-0.01),
+       labels = c("Antagonistic", "Synergistic"),
+       add = TRUE, 
+       colkey = FALSE, 
+       col = c(j.blue, j.red),
+       cex = 1.25)
+
+text3D(0.06, 0.12, 0.12, 
+       labels = "Effect of All",
+       add = TRUE, 
+       colkey = FALSE, 
+       col = rgb(0.65, 0.65, 0.65, 1),
+       cex = 1)
+
+######### Arrows ##############
+
+arrows3D(x0 = rawD_na_on_c,
+        x1 = rawD_na_on_e,
+        y0 = 0.01, 
+        y1 = 0.01,
+        z0 = 0,
+        z1 = 0,
+        add = TRUE, type = "cone",
+        col = j.red, lwd = 3, length = 0.1)
+
+arrows3D(x0 = 0.01,
+        x1 = 0.01,
+        y0 = rawD_cu_on_c, 
+        y1 = rawD_cu_on_e,
+        z0 = 0,
+        z1 = 0,
+        add = TRUE, type = "cone",
+        col = j.red, lwd = 3, length = 0.1)
+
+arrows3D(x0 = 0.01,
+        x1 = 0.01,
+        y0 = 0.01, 
+        y1 = 0.01,
+        z0 = rawD_temp_on_c,
+        z1 = rawD_temp_on_e,
+        add = TRUE, type = "cone",
+        col = j.red, lwd = 3, length = 0.1)
+
+arrows3D(x0 = coord_all_con+0.01,
+        x1 = coord_all_evo+0.01,
+        y0 = coord_all_con+0.01,
+        y1 = coord_all_evo+0.01,
+        z0 = coord_all_con,
+        z1 = coord_all_evo,
+        add = TRUE, type = "cone",
+        col = j.red, lwd = 3, length = 0.1)
+
+
+
+
+########  Plot and then play/spin as RGL ###########
+
+plotrgl(alpha=0.75, windowRect = c(0, 0, 1000, 1000),
+        zoom = 1.5, smooth = TRUE) 
+
+axes3d(c('x', 'y', 'z'),
+       lwd=0.5,
+       col=rgb(0.65, 0.65, 0.65),
+       nticks = 3)
+
+title3d(xlab = "Effect of Salt",
+        ylab = "Effect of Copper",
+        zlab = "Effect of Temperature",
+        col=rgb(0.65, 0.65, 0.65))
+
+
+#play3d( spin3d( axis = c(0, 0, 1), rpm = 2), duration = 30)
+
+
+####### Save as gif ##########
+
+#movie3d(
+#  movie="3_Stressors", 
+#  spin3d( axis = c(0, 0, 1), rpm = 2),
+#  type = "gif", 
+#  duration = 30, 
+#  dir = "gif",
+#  clean = T)
+
+```
+
+
+
+
+### Suplementary Video 2 - 3D perforamnce space
+
+#### Part a
+
+
+```{r, echo=FALSE}
+
+########### Points ###########
+
+## ALl ##
+scatter3D(x = ad_all_to_na-All_CuTemp_removed,
+          y = ad_all_to_cu-All_NaTemp_removed, 
+          z = ad_all_to_temp-All_NaCu_removed,
+          colvar = NULL, 
+          col = j.red,
+          pch = 19, 
+          cex = 3.5,
+          xlim = c(-0.1, 0.3),
+          ylim = c(-0.1, 0.3),
+          zlim = c(-0.1, 0.3),
+          box=FALSE,
+          ticktype = "detailed")
+
+## NaCu ##
+scatter3D(x = ad_nacu_to_na-NaCu_Cu_removed,
+          y = ad_nacu_to_cu-NaCu_Na_removed, 
+          z = ad_nacu_to_temp-NaCu_NaCu_removed,
+          colvar = NULL, 
+          col = j.red,
+          pch = 19, 
+          cex = 3.5,
+          xlim = c(0, 0.3),
+          ylim = c(0, 0.3),
+          zlim = c(0, 0.3),
+          box=FALSE,
+          ticktype = "detailed",
+          add = T)
+
+## NaTemp ##
+scatter3D(x = ad_natemp_to_na-NaTemp_Temp_removed,
+          y = ad_natemp_to_cu-NaTemp_NaTemp_removed, 
+          z = ad_natemp_to_temp-NaTemp_Na_removed,
+          colvar = NULL, 
+          col = j.red,
+          pch = 19, 
+          cex = 3.5,
+          xlim = c(0, 0.3),
+          ylim = c(0, 0.3),
+          zlim = c(0, 0.3),
+          box=FALSE,
+          ticktype = "detailed",
+          add = T)
+
+## CuTemp ##
+scatter3D(x = ad_cutemp_to_na-CuTemp_CuTemp_removed,
+          y = ad_cutemp_to_cu-CuTemp_Temp_removed, 
+          z = ad_cutemp_to_temp-CuTemp_Cu_removed,
+          colvar = NULL, 
+          col = j.red,
+          pch = 19, 
+          cex = 3.5,
+          xlim = c(-0.05, 0.3),
+          ylim = c(-0.05, 0.3),
+          zlim = c(-0.05, 0.3),
+          box=FALSE,
+          ticktype = "detailed",
+          add = T)
+
+## Na ##
+scatter3D(x = ad_na_to_na,
+          y = ad_na_to_cu-Na_removed, 
+          z = ad_na_to_temp-Na_removed,
+          colvar = NULL, 
+          col = j.red,
+          pch = 19, 
+          cex = 3.5,
+          xlim = c(-0.05, 0.3),
+          ylim = c(-0.05, 0.3),
+          zlim = c(-0.05, 0.3),
+          box=FALSE,
+          ticktype = "detailed",
+          add = T)
+
+## Cu ##
+scatter3D(x = ad_cu_to_na-Cu_removed,
+          y = ad_cu_to_cu, 
+          z = ad_cu_to_temp-Cu_removed,
+          colvar = NULL, 
+          col = j.red,
+          pch = 19, 
+          cex = 3.5,
+          xlim = c(-0.05, 0.3),
+          ylim = c(-0.05, 0.3),
+          zlim = c(-0.05, 0.3),
+          box=FALSE,
+          ticktype = "detailed",
+          add = T)
+
+## Temp ##
+scatter3D(x = ad_temp_to_na-Temp_removed,
+          y = ad_temp_to_cu-Temp_removed, 
+          z = ad_temp_to_temp,
+          colvar = NULL, 
+          col = j.red,
+          pch = 19, 
+          cex = 3.5,
+          xlim = c(-0.05, 0.3),
+          ylim = c(-0.05, 0.3),
+          zlim = c(-0.05, 0.3),
+          box=FALSE,
+          ticktype = "detailed",
+          add = T)
+
+## Control ##
+scatter3D(x = 0,
+          y = 0, 
+          z = 0,
+          colvar = NULL, 
+          col = j.blue,
+          pch = 19, 
+          cex = 3.5,
+          xlim = c(-0.05, 0.3),
+          ylim = c(-0.05, 0.3),
+          zlim = c(-0.05, 0.3),
+          box=FALSE,
+          ticktype = "detailed",
+          add = T)
+
+########### Box ############
+
+segments3D(x0 = c(0, 0, 0),
+        x1 = c(0.25, 0, 0),
+        y0 = c(0, 0, 0),
+        y1 = c(0, 0.25, 0),
+        z0 = c(0, 0, 0),
+        z1 = c(0, 0, 0.25),
+        add = TRUE)
+
+#segments3D(x0 = c(0.25, 0.25, 0.25),
+#        x1 = c(0.25, 0.25, 0),
+#        y0 = c(0.25, 0.25, 0.25),
+#        y1 = c(0, 0.25, 0.25),
+#        z0 = c(0.25, 0.25, 0.25),
+#        z1 = c(0.25, 0, 0.25),
+#        add = TRUE)
+
+#segments3D(x0 = c(0.25, 0.25, 0.25),
+#        x1 = c(0.25, 0.25, 0),
+#        y0 = c(0, 0, 0),
+#        y1 = c(0.25, 0, 0),
+#        z0 = c(0, 0, 0.25),
+#        z1 = c(0, 0.25, 0.25),
+#        add = TRUE)
+
+#segments3D(x0 = c(0, 0, 0, 0),
+#        x1 = c(0, 0, 0.25, 0.25),
+#        y0 = c(0.25, 0.25, 0, 0.25),
+#        y1 = c(0.25, 0, 0, 0.25),
+#        z0 = c(0, 0.25, 0.25, 0),
+#        z1 = c(0.25, 0.25, 0.25, 0),
+#        add = TRUE)
+
+
+############ Text ##############
+
+text3D(x = ad_all_to_na-All_CuTemp_removed+0.0065,
+       y = ad_all_to_cu-All_NaTemp_removed+0.0065, 
+       z = ad_all_to_temp-All_NaCu_removed+0.0065,
+       labels = c("SCT", "SCT", "SCT", "SCT"),
+       add = TRUE, 
+       colkey = FALSE, 
+       cex = 0.7, 
+       col = c(rgb(0.5, 0.5, 0.5)))
+
+text3D(x = ad_nacu_to_na-NaCu_Cu_removed+0.0065,
+       y = ad_nacu_to_cu-NaCu_Na_removed+0.0065, 
+       z = ad_nacu_to_temp-NaCu_NaCu_removed+0.0065,
+       labels = c("SC", "SC", "SC"),
+       add = TRUE, 
+       colkey = FALSE, 
+       cex = 0.7, 
+       col = c(rgb(0.5, 0.5, 0.5)))
+
+text3D(x = ad_natemp_to_na-NaTemp_Temp_removed+0.0065,
+       y = ad_natemp_to_cu-NaTemp_NaTemp_removed+0.0065, 
+       z = ad_natemp_to_temp-NaTemp_Na_removed+0.0065,
+       labels = c("ST", "ST", "ST"),
+       add = TRUE, 
+       colkey = FALSE, 
+       cex = 0.7, 
+       col = c(rgb(0.5, 0.5, 0.5)))
+
+text3D(x = ad_cutemp_to_na-CuTemp_CuTemp_removed+0.0065,
+       y = ad_cutemp_to_cu-CuTemp_Temp_removed+0.0065, 
+       z = ad_cutemp_to_temp-CuTemp_Cu_removed+0.0065,
+       labels = c("CT", "CT", "CT", "CT"),
+       add = TRUE, 
+       colkey = FALSE, 
+       cex = 0.7, 
+       col = c(rgb(0.5, 0.5, 0.5)))
+
+text3D(x = ad_na_to_na+0.0065,
+       y = ad_na_to_cu-Na_removed+0.0065, 
+       z = ad_na_to_temp-Na_removed+0.0065,
+       labels = c("S", "S", "S", "S"),
+       add = TRUE, 
+       colkey = FALSE, 
+       cex = 0.7, 
+       col = c(rgb(0.5, 0.5, 0.5)))
+
+
+text3D(x = ad_cu_to_na-Cu_removed+0.0065,
+       y = ad_cu_to_cu+0.0065, 
+       z = ad_cu_to_temp-Cu_removed+0.0065,
+       labels = c("C", "C", "C"),
+       add = TRUE, 
+       colkey = FALSE, 
+       cex = 0.7, 
+       col = c(rgb(0.5, 0.5, 0.5)))
+
+
+text3D(x = ad_temp_to_na-Temp_removed+0.0065,
+       y = ad_temp_to_cu-Temp_removed+0.0065, 
+       z = ad_temp_to_temp+0.0065,
+       labels = c("T", "T", "T", "T"),
+       add = TRUE, 
+       colkey = FALSE, 
+       cex = 0.7, 
+       col = c(rgb(0.5, 0.5, 0.5)))
+
+text3D(x = 0+0.0065,
+       y = 0+0.0065, 
+       z = 0+0.0065,
+       labels = "Con",
+       add = TRUE, 
+       colkey = FALSE, 
+       cex = 0.7, 
+       col = c(rgb(0.5, 0.5, 0.5)))
+
+
+########  Plot and then play/spin as RGL ###########
+
+plotrgl(alpha=0.75, windowRect = c(0, 0, 1000, 1000),
+        zoom = 1.5, smooth = TRUE) 
+
+### Axis ###
+axes3d(c('x', 'y', 'z'),
+       lwd=0.5,
+       col=rgb(0.65, 0.65, 0.65),
+       nticks = 6)
+
+title3d(xlab = "Adaptation to Salt",
+        ylab = "Adaptation to Copper",
+        zlab = "Adaptation to Temperature",
+        col=rgb(0.65, 0.65, 0.65))
+
+
+# play / spin
+
+#play3d( spin3d( axis = c(0, 0, 1), rpm = 2), duration = 30)
+
+
+####### Save as gif ##########
+
+#movie3d(
+#  movie="3_Pareto_a", 
+#  spin3d( axis = c(0, 0, 1), rpm = 2),
+#  type = "gif", 
+#  duration = 30, 
+#  dir = "gif",
+#  clean = T)
+
+
+```
+
+<br>
+
+#### Part b
+
+<br>
+
+```{r, echo=FALSE}
+x.coords = c(0, mean(ad_na_to_na), 0, 0)
+y.coords = c(0, 0, mean(ad_cu_to_cu), 0)
+z.coords = c(0, 0, 0, mean(ad_temp_to_temp))
+
+x.coords_2 = x.coords+0.0055
+y.coords_2 = y.coords+0.0055
+z.coords_2 = z.coords+0.0055
+
+########### Points ###########
+
+scatter3D(x = x.coords, y = y.coords, z = z.coords,
+          colvar = NULL, 
+          col = c(j.blue, j.red, j.red, j.red),
+          pch = 19, 
+          cex = 3.5,
+          xlim = c(0, 0.15),
+          ylim = c(0, 0.15),
+          zlim = c(0, 0.15),
+          box=FALSE,
+          ticktype = "detailed")
+
+scatter3D(x = mean(ad_all_to_na)-All_CuTemp_removed,
+          y = mean(ad_all_to_cu)-All_NaTemp_removed, 
+          z = mean(ad_all_to_temp)-All_NaCu_removed,
+          colvar = NULL, 
+          col = j.red,
+          pch = 19, 
+          cex = 3.5,
+          xlim = c(0, 0.15),
+          ylim = c(0, 0.15),
+          zlim = c(0, 0.15),
+          box=FALSE, 
+          ticktype = "detailed",
+          add = T)
+
+########### Box ############
+
+segments3D(x0 = c(0, 0, 0),
+        x1 = c(0.15, 0, 0),
+        y0 = c(0, 0, 0),
+        y1 = c(0, 0.15, 0),
+        z0 = c(0, 0, 0),
+        z1 = c(0, 0, 0.15),
+        add = TRUE)
+
+#segments3D(x0 = c(0.25, 0.25, 0.25),
+#        x1 = c(0.25, 0.25, 0),
+#        y0 = c(0.25, 0.25, 0.25),
+#        y1 = c(0, 0.25, 0.25),
+#        z0 = c(0.25, 0.25, 0.25),
+#        z1 = c(0.25, 0, 0.25),
+#        add = TRUE)
+
+#segments3D(x0 = c(0.25, 0.25, 0.25),
+#        x1 = c(0.25, 0.25, 0),
+#        y0 = c(0, 0, 0),
+#        y1 = c(0.25, 0, 0),
+#        z0 = c(0, 0, 0.25),
+#        z1 = c(0, 0.25, 0.25),
+#        add = TRUE)
+
+#segments3D(x0 = c(0, 0, 0, 0),
+#        x1 = c(0, 0, 0.25, 0.25),
+#        y0 = c(0.25, 0.25, 0, 0.25),
+#        y1 = c(0.25, 0, 0, 0.25),
+#        z0 = c(0, 0.25, 0.25, 0),
+#        z1 = c(0.25, 0.25, 0.25, 0),
+#        add = TRUE)
+
+
+############ Text ##############
+
+text3D(x = x.coords_2, y = y.coords_2, z = z.coords_2,
+       labels = c("Con", "S", "C", "T"),
+       add = TRUE, 
+       colkey = FALSE, 
+       cex = 1)
+
+text3D(x = mean(ad_all_to_na)-All_CuTemp_removed+0.0065,
+       y = mean(ad_all_to_cu)-All_NaTemp_removed+0.0065, 
+       z = mean(ad_all_to_temp)-All_NaCu_removed+0.0065,
+       labels = "SCT",
+       add = TRUE, 
+       colkey = FALSE, 
+       cex = 1)
+
+######### Arrows ##############
+
+arrows3D(x0 = 0,
+        x1 = mean(ad_na_to_na),
+        y0 = 0, 
+        y1 = 0,
+        z0 = 0,
+        z1 = 0,
+        add = TRUE, type = "cone",
+        col = j.red, lwd = 3, length = 0.1)
+
+arrows3D(x0 = 0,
+        x1 = 0,
+        y0 = 0,
+        y1 = mean(ad_cu_to_cu),
+        z0 = 0,
+        z1 = 0,
+        add = TRUE, type = "cone",
+        col = j.red, lwd = 3, length = 0.1)
+
+arrows3D(x0 = 0,
+        x1 = 0,
+        y0 = 0, 
+        y1 = 0,
+        z0 = 0,
+        z1 = mean(ad_temp_to_temp),
+        add = TRUE, type = "cone",
+        col = j.red, lwd = 3, length = 0.1)
+
+arrows3D(x0 = 0,
+        x1 = mean(ad_all_to_na)-All_CuTemp_removed,
+        y0 = 0,
+        y1 = mean(ad_all_to_cu)-All_NaTemp_removed,
+        z0 = 0,
+        z1 = mean(ad_all_to_temp)-All_NaCu_removed,
+        add = TRUE, type = "cone",
+        col = j.red, lwd = 3, length = 0.1)
+
+########  Plot and then play/spin as RGL ###########
+
+plotrgl(alpha=0.75, windowRect = c(0, 0, 1000, 1000),
+        zoom = 1.5, smooth = TRUE) 
+
+### Axis ###
+axes3d(c('x', 'y', 'z'),
+       lwd=0.5,
+       col=rgb(0.65, 0.65, 0.65),
+       nticks = 3)
+
+title3d(xlab = "Adaptation to  Salt",
+        ylab = "Adaptation to  Copper",
+        zlab = "Adaptation to  Temperature",
+        col=rgb(0.65, 0.65, 0.65))
+
+
+# play / spin
+
+#play3d( spin3d( axis = c(0, 0, 1), rpm = 2), duration = 30)
+
+
+####### Save as gif ##########
+
+#movie3d(
+#  movie="3_Pareto_b", 
+#  spin3d( axis = c(0, 0, 1), rpm = 2),
+#  type = "gif", 
+#  duration = 30, 
+#  dir = "gif",
+#  clean = T)
+```
+<br>
+<br>

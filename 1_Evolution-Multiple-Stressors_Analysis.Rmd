@@ -8,10 +8,11 @@ output:
      toc: true
      toc_depth: 4
      number_sections: no
-     fig_caption: true
 ---
 
 ```{r, echo=FALSE, results='hide'}
+# R version 4.0.2 (2020-06-22)
+
 rm(list = ls())           # clear the environment 
 
 # Packages
@@ -25,15 +26,13 @@ source("Scripts/Hedges.Functions.R")
 
 ### Intro
 
-This R notebook contains the code used for the data analysis in the paper: *Rapid Evolution Generates Synergism Between Multiple Stressors and Complicates Ecological Restoration*. 
+This R notebook contains the code used for the data analysis in the paper: *"Rapid evolution generates synergism between multiple stressors: linking theory and an evolution experiment"*. 
 
-We are interested in the following questions: 
+We are interested in two main questions: 
 
-- Do interactions between stressors change over time due to evolution?
+1. Do interactions between stressors change over time due to evolution?
 
-- How do populations respond when stressors they have evolved to are removed?
-
-- Does it matter which stressor is removed from a population that has evolved to multiple stressors?
+2. How do populations respond when stressors they have evolved to are removed?
 
 
 ### Growth Rate Data
@@ -45,11 +44,11 @@ The raw data we are using is in *growth-data.csv* and the variables are:
 - *Population*: 1-32 - 4 replicates of each evolved line, missing three populations that went extinct during the experiment: 11 (Cu), 19 (NaCu), and 24 (NaTemp). 
 - *evolline*: 1-8 - 8 evolved lines of rotifers (Con, Na, Cu, Temp, NaCu, NaTemp, CuTemp, All).
 - *Replicate*: 1-12 - there were ~12 replicates per combination.  
-- *Growth*: A measure of fitness. Growth rate (% per day)
+- *Growth*: growth rate (% per day) as a measure of fitness
 
 2x8x4x8x12 = 6144 observations - but due to the extinction of three populations and the fact that not all replicates worked we have a total of 5350 observations.
 
-We carried out our analysis at the population level. The mean growth rate of populations is the response variable. This  allows us to carry out simple statistics that clearly explain our results and prevents any sort of pseudo-replication.
+We carried out our analysis at the population level. Population growth rates is the response variable. This  allows us to carry out simple statistics that clearly explain our results and prevents any sort of pseudo-replication.
 
 <br>
 
@@ -60,14 +59,12 @@ rot_data <- read.csv("Data/growth_data.csv",
                      header = TRUE, 
                      stringsAsFactors=FALSE)
 
-# create a vector representing interactions of evolline and environment
-# and recode in another vector as numeric (from 1 to 64). 
-# These have been ordered along the rows of the original 
-# 64 panel plot by using the magic that is lex.order=TRUE 
+# create a column representing interactions of evolline and environment
+# Ordered along the rows of the original 64 panel plot with lex.order=TRUE 
 rot_data$treat_fac <- interaction(rot_data$evolline, 
                                   rot_data$Environment, lex.order = TRUE)
 
-# add numeric version
+# encode as numeric (from 1 to 64)
 rot_data$treat_num <- as.numeric(rot_data$treat_fac)
 
 # convert to tibble 
@@ -112,7 +109,7 @@ write.csv(rot_pop, "Data/Outputs/population_growth.csv", row.names=F)
 
 ### Part 1: Temporal Variation in Stressor Interactions
 
-Our first question is comparing the interactions between stressors for control (blue below) and evolved (red below) populations The numbered boxes 1-64 are encoded by the treat_num variable so we can use to pick out specific combinations of evolved line and environment. As there are three/four population replicates for each evolved line for each combination we have a sample size of 3 or 4 (the mean growth for each populations)
+Our first question is comparing the interactions between stressors for control (blue below) and evolved (red below) populations The numbered boxes 1-64 are encoded by the treat_num variable so we can use to pick out specific combinations of evolved line and environment. As there are three/four population replicates for each evolved line for each combination we have a sample size of 3 or 4.
 
 <center>
 ![](Images/growth_assay_table.png){#id .class width=40% height=40%}
@@ -280,11 +277,11 @@ stressors <- c("NaCu", "NaTemp", "CuTemp", "All",
 treatment <- c(0, 0, 0, 0, 
                1, 1, 1, 1)
 
-number <- c("SC", "ST", "CT", "SCT", "SC", "ST", "CT", "SCT")
+label <- c("SC", "ST", "CT", "SCT", "SC", "ST", "CT", "SCT")
 
 treatment_F <- as.factor(treatment)
 
-# Jitter to enhance visibility in plots (figure 1)
+# Set jitter to improve clarity of plots (figure 1)
 treatment_J <- c(-0.15, -0.05, 0.05, 0.15,
                  0.85, 0.95, 1.05, 1.15)
 
@@ -309,11 +306,12 @@ cihigh2 <- -1*c(CI_nacu_high_C, CI_natemp_high_C, CI_cutemp_high_C,
              CI_all_high_C, CI_nacu_high_E_II, CI_natemp_high_E_II, 
              CI_cutemp_high_E_II, CI_all_high_E_II)
 
+# create dataframe (as a tibble)
 growth_trend_data <- tibble(stressors, treatment, treatment_J, treatment_F, 
                                 effect1, cilow1, cihigh1,
-                                effect2, cilow2, cihigh2, number)
+                                effect2, cilow2, cihigh2, label)
 
-# convert to factor 
+# set factor 
 growth_trend_data$stressors <- factor(growth_trend_data$stressors, 
                                    levels = c("NaCu", "NaTemp", 
                                               "CuTemp", "All"))
@@ -324,14 +322,13 @@ write.csv(growth_trend_data, "Data/Outputs/stressor_interactions.csv",
 ```
 
 
-- **Analysis of trend** 
+- **Analysis of trend (Scenario 1)** 
 
 ```{r, echo=TRUE}
 # Assumption 1 - difference between groups is normally distributed
 # d <- growth_trend_data$effect1[treatment_F == "0"] - growth_trend_data$effect1[treatment_F == "1"]
 # shapiro.test(d) 
-## null hypothesis, that they are normally distributed, is not rejected ##
-
+## null hypothesis, that they are normally distributed, is not rejected
 
 # Assumption 2 - equal variance between groups
 # var.test(effect1 ~ treatment_F, data=growth_trend_data) 
@@ -403,7 +400,6 @@ Pairs of populations are compared in the environment they evolved in and in the 
 # Assumption 2 - equal variance between groups
 #var.test(mean_growth ~ evo_rem, data=question_2) 
 # null hypothesis, that they have equal variance, is not rejected 
-
 
 ## paired t-test  # R identifies pairs in the data, at the population level
 t.test(mean_growth ~ evo_rem, equal.var = TRUE, paired=T, 
