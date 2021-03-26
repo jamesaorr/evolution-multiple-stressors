@@ -1,11 +1,11 @@
 # evolution-multiple-stressors
-Data and code used for all statistical analyses and figures for the paper: "Rapid evolution generates synergism between multiple stressors and complicates ecological restoration". 
+Data and code used for all statistical analyses and figures for the paper: "Rapid evolution generates synergism between multiple stressors: linking theory and an evolution experiment". 
 
 Code for analysis and figure/video construction are in three R notebooks, which should be run in order: 
 
 - **1_Evolution-Multiple-Stressors_Analysis.Rmd** - this notebook contains information about the data used and the code for all statistical analyses. 
 - **2_Evolution-Multiple-Stressors_Figures.Rmd** - this notebook contains the code required to reproduce the figures (which were subsequently annotated in powerpoint). 
-- **3_Evolution-Multiple-Stressors_SM.Rmd** - this notebook contains the code required to reproduce the supplementary figures and gifs used to make supplementary videos. 
+- **3_Evolution-Multiple-Stressors_Videos.Rmd** - this notebook contains the code required to reproduce the supplementary videos. 
 
 There are also three folders: 
 
